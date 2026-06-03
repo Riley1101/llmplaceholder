@@ -70,10 +70,7 @@ func Serve() {
 		case "tools/list":
 			logger.Println("Listing available tools...")
 			resp.Result = map[string]interface{}{
-				"tools": []map[string]string{
-					{"name": "get_invoice_ledger", "description": "Fetches overdue invoices."},
-					{"name": "fetch_pod_metrics", "description": "Fetches Kubernetes RAM/CPU data."},
-				},
+				"tools": registry.ListTools(),
 			}
 
 		default:

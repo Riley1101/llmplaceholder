@@ -1,0 +1,95 @@
+{
+  "brand": "Cornerstone Outfitters",
+  "inventory": {
+    "total_skus": 4821,
+    "low_stock_alerts": [
+      {
+        "sku": "OUT-BOOT-WRK-11",
+        "name": "Pro Work Boot (sz 11)",
+        "qty_on_hand": 3,
+        "reorder_point": 12,
+        "supplier": "Danner Co.",
+        "lead_time_days": 14
+      },
+      {
+        "sku": "JKT-RAIN-M-BLK",
+        "name": "Waterproof Rain Jacket (M, Black)",
+        "qty_on_hand": 0,
+        "reorder_point": 8,
+        "supplier": "Columbia Sportswear",
+        "lead_time_days": 21,
+        "note": "OUT OF STOCK — back-order placed 2026-05-30"
+      },
+      {
+        "sku": "SOCK-WL-CREW-XL",
+        "name": "Merino Wool Crew Socks (XL)",
+        "qty_on_hand": 6,
+        "reorder_point": 20,
+        "supplier": "Darn Tough",
+        "lead_time_days": 10
+      },
+      {
+        "sku": "GLOVE-INS-L",
+        "name": "Insulated Work Glove (L)",
+        "qty_on_hand": 2,
+        "reorder_point": 15,
+        "supplier": "Wells Lamont",
+        "lead_time_days": 7
+      }
+    ],
+    "open_purchase_orders": [
+      {"po_id": "PO-2026-1104", "supplier": "Columbia Sportswear", "skus": 12, "expected_arrival": "2026-06-18", "value_usd": 28400},
+      {"po_id": "PO-2026-1098", "supplier": "Danner Co.", "skus": 4, "expected_arrival": "2026-06-10", "value_usd": 9200}
+    ],
+    "overstock_value_usd": 89200.00,
+    "inventory_turns_ytd": 4.2
+  },
+  "pos_summary": {
+    "date": "2026-06-02",
+    "revenue_usd": 12840.00,
+    "transactions": 341,
+    "avg_basket_usd": 37.65,
+    "units_sold": 628,
+    "returns": 18,
+    "return_value_usd": 520.00,
+    "top_selling_sku": "FLEECE-ZIP-M-NVY",
+    "top_selling_name": "Full-Zip Fleece Jacket (M, Navy)",
+    "payment_split": {"cash_pct": 12, "card_pct": 76, "buy_now_pay_later_pct": 12}
+  },
+  "store_performance": [
+    {
+      "store": "Portland-Main",
+      "revenue_mtd_usd": 184200,
+      "target_mtd_usd": 180000,
+      "variance_pct": "+2.3%",
+      "conversion_rate_pct": 38,
+      "avg_transaction_usd": 42.10,
+      "staff_hours_scheduled": 480
+    },
+    {
+      "store": "Seattle-Pike",
+      "revenue_mtd_usd": 142800,
+      "target_mtd_usd": 170000,
+      "variance_pct": "-16.0%",
+      "conversion_rate_pct": 28,
+      "avg_transaction_usd": 34.20,
+      "note": "construction on Pike St. reducing foot traffic"
+    },
+    {
+      "store": "Denver-Union",
+      "revenue_mtd_usd": 96400,
+      "target_mtd_usd": 95000,
+      "variance_pct": "+1.5%",
+      "conversion_rate_pct": 35,
+      "avg_transaction_usd": 38.80
+    },
+    {
+      "store": "Boise-Downtown",
+      "revenue_mtd_usd": 61200,
+      "target_mtd_usd": 65000,
+      "variance_pct": "-5.8%",
+      "conversion_rate_pct": 31,
+      "avg_transaction_usd": 36.40
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "org": "Veloce Analytics",
+  "growth_metrics": {
+    "mrr_usd": 128400.00,
+    "arr_usd": 1540800.00,
+    "mrr_growth_mom": "+6.2%",
+    "churn_rate_pct": 2.1,
+    "net_revenue_retention_pct": 118,
+    "new_customers_mtd": 47,
+    "churned_customers_mtd": 9,
+    "expansion_revenue_mtd": 14200,
+    "nps_score": 62,
+    "trial_to_paid_conversion_pct": 18.4,
+    "avg_contract_value_usd": 2731,
+    "cac_usd": 1840,
+    "ltv_usd": 19440,
+    "ltv_cac_ratio": 10.6
+  },
+  "cohort_retention": [
+    {"cohort": "2026-01", "size": 38, "month_1": "88%", "month_3": "74%", "month_6": "61%"},
+    {"cohort": "2026-02", "size": 41, "month_1": "91%", "month_3": "78%"},
+    {"cohort": "2026-03", "size": 44, "month_1": "85%"},
+    {"cohort": "2026-04", "size": 52, "month_1": "90%"},
+    {"cohort": "2026-05", "size": 47, "month_1": "87%"}
+  ],
+  "top_churned_accounts": [
+    {
+      "account": "Meridian Solutions",
+      "arr_lost": 24000,
+      "reason": "switched to competitor (Tableau)",
+      "health_score_at_churn": 42,
+      "csm": "r.okafor@veloce.io",
+      "churned_at": "2026-06-01"
+    },
+    {
+      "account": "Dunlop & Associates",
+      "arr_lost": 18000,
+      "reason": "budget cut — Series B fell through",
+      "health_score_at_churn": 58,
+      "csm": "t.walsh@veloce.io",
+      "churned_at": "2026-05-28"
+    },
+    {
+      "account": "Pinnacle Freight",
+      "arr_lost": 9600,
+      "reason": "low feature adoption, no exec sponsor",
+      "health_score_at_churn": 31,
+      "csm": "r.okafor@veloce.io",
+      "churned_at": "2026-05-22"
+    }
+  ],
+  "feature_adoption": [
+    {"feature": "AI Summaries",        "adoption_pct": 71, "wau": 1204, "trend": "up"},
+    {"feature": "Custom Dashboards",   "adoption_pct": 54, "wau": 912,  "trend": "stable"},
+    {"feature": "API Webhooks",        "adoption_pct": 38, "wau": 643,  "trend": "up"},
+    {"feature": "Scheduled Reports",   "adoption_pct": 29, "wau": 492,  "trend": "down"},
+    {"feature": "Data Export (CSV)",   "adoption_pct": 82, "wau": 1390, "trend": "stable"},
+    {"feature": "SSO / SAML",         "adoption_pct": 61, "wau": 0,    "trend": "stable"}
+  ],
+  "at_risk_accounts": [
+    {"account": "Harlow Media Group", "arr": 36000, "health_score": 38, "last_login_days_ago": 22, "csm": "t.walsh@veloce.io"},
+    {"account": "Crestwood Logistics", "arr": 14400, "health_score": 44, "last_login_days_ago": 14, "open_tickets": 3}
+  ]
+}

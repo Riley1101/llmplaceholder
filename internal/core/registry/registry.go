@@ -6,6 +6,20 @@ import (
 	"llmplaceholder/internal/core/models"
 )
 
+// ListTools returns one entry per unique non-fallback MCP tool in the registry
+func ListTools() []map[string]string {
+	seen := map[string]bool{}
+	var tools []map[string]string
+	for _, s := range GlobalRegistry {
+		if s.MCPToolName == "" || s.MCPToolName == "unknown" || seen[s.MCPToolName] {
+			continue
+		}
+		seen[s.MCPToolName] = true
+		tools = append(tools, map[string]string{"name": s.MCPToolName})
+	}
+	return tools
+}
+
 // MatchIntent scans the user prompt and returns the closest high-fidelity scenario
 func MatchIntent(userPrompt string) models.MockScenario {
 	cleaned := strings.ToLower(userPrompt)

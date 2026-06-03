@@ -5,35 +5,28 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 )
 
-// StreamOpenAI formats a raw string into OpenAI SSE chunks and applies network jitter
+// regex to split by word boundaries while preserving all whitespace/newlines
+var chunker = regexp.MustCompile(`\S+\s*|\s+`)
+
 func StreamOpenAI(w http.ResponseWriter, flusher http.Flusher, modelRequested string, fullText string) {
-	// 1. Simulate Time-To-First-Token (TTFT)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond) // TTFT
 
 	streamID := fmt.Sprintf("chatcmpl-%d", time.Now().UnixNano())
-	words := strings.Split(fullText, " ")
+	chunks := chunker.FindAllString(fullText, -1)
 
-	for i, word := range words {
-		chunkText := word
-		if i > 0 {
-			chunkText = " " + word
-		}
-
+	for _, chunkText := range chunks {
 		chunk := map[string]interface{}{
 			"id":      streamID,
 			"object":  "chat.completion.chunk",
 			"created": time.Now().Unix(),
 			"model":   modelRequested,
 			"choices": []map[string]interface{}{
-				{
-					"delta": map[string]string{
-						"content": chunkText,
-					},
-				},
+				{"delta": map[string]string{"content": chunkText}},
 			},
 		}
 
@@ -41,14 +34,15 @@ func StreamOpenAI(w http.ResponseWriter, flusher http.Flusher, modelRequested st
 		fmt.Fprintf(w, "data: %s\n\n", data)
 		flusher.Flush()
 
-		// 2. Simulate per-token network jitter & punctuation pauses
-		delay := 30 + rand.Intn(40)
-		if strings.HasSuffix(word, ".") || strings.HasSuffix(word, ",") {
-			delay += 100
+		// Jitter logic (skip jitter for pure whitespace)
+		if strings.TrimSpace(chunkText) != "" {
+			delay := 20 + rand.Intn(30)
+			if strings.HasSuffix(strings.TrimSpace(chunkText), ".") {
+				delay += 80
+			}
+			time.Sleep(time.Duration(delay) * time.Millisecond)
 		}
-		time.Sleep(time.Duration(delay) * time.Millisecond)
 	}
-
 	fmt.Fprintf(w, "data: [DONE]\n\n")
 	flusher.Flush()
 }

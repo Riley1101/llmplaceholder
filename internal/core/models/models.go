@@ -23,6 +23,7 @@ type MockScenario struct {
 	FullResponse string
 	MCPToolName  string
 	MCPToolData  interface{}
+	StateKey     string // root key to extract from tenant DB; empty means no tenant override
 }
 
 // OpenAIChatRequest represents standard /v1/chat/completions payload

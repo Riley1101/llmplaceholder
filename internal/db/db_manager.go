@@ -1,115 +1,137 @@
 package db
 
 import (
+	"database/sql"
 	"encoding/json"
-	"io"
+	"log"
 	"os"
 	"path/filepath"
-	"sync"
+	"strings"
+
+	_ "modernc.org/sqlite"
 )
 
-// TenantDBManager orchestrates isolated flat-file databases
 type TenantDBManager struct {
-	mu           sync.RWMutex
-	tenantLocks  map[string]*sync.RWMutex
-	dataDir      string
-	templatePath string
+	db *sql.DB
 }
 
-func NewTenantDBManager(dataDir string, templatePath string) *TenantDBManager {
-	// Ensure the data directory exists
-	os.MkdirAll(dataDir, 0755)
+func NewTenantDBManager(dbPath string) (*TenantDBManager, error) {
+	os.MkdirAll(filepath.Dir(dbPath), 0755)
 
-	return &TenantDBManager{
-		tenantLocks:  make(map[string]*sync.RWMutex),
-		dataDir:      dataDir,
-		templatePath: templatePath,
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		return nil, err
 	}
-}
 
-// getLock returns the specific mutex for a single tenant
-func (m *TenantDBManager) getLock(tenantID string) *sync.RWMutex {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	db.Exec("PRAGMA journal_mode=WAL")
+	db.Exec("PRAGMA foreign_keys=ON")
 
-	if lock, exists := m.tenantLocks[tenantID]; exists {
-		return lock
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS tenant_state (
+		tenant_id   TEXT PRIMARY KEY,
+		state_json  TEXT NOT NULL DEFAULT '{}',
+		created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+	)`)
+	if err != nil {
+		return nil, err
 	}
-	m.tenantLocks[tenantID] = &sync.RWMutex{}
-	return m.tenantLocks[tenantID]
+
+	return &TenantDBManager{db: db}, nil
 }
 
-// ReadState loads a tenant's database into a Go map
 func (m *TenantDBManager) ReadState(tenantID string) (map[string]interface{}, error) {
-	filePath := filepath.Join(m.dataDir, tenantID+".json")
-	lock := m.getLock(tenantID)
-
-	// Provision under write lock to prevent concurrent callers racing on a new file
-	lock.Lock()
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		if err := m.provisionTenant(filePath); err != nil {
-			lock.Unlock()
+	var raw string
+	err := m.db.QueryRow("SELECT state_json FROM tenant_state WHERE tenant_id = ?", tenantID).Scan(&raw)
+	if err == sql.ErrNoRows {
+		if err := m.provisionTenant(tenantID); err != nil {
 			return nil, err
 		}
+		return map[string]interface{}{}, nil
 	}
-	lock.Unlock()
-
-	lock.RLock()
-	defer lock.RUnlock()
-
-	bytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
 	var data map[string]interface{}
-	err = json.Unmarshal(bytes, &data)
+	err = json.Unmarshal([]byte(raw), &data)
 	return data, err
 }
 
-// WriteState serializes a Go map back to the tenant's isolated file
 func (m *TenantDBManager) WriteState(tenantID string, data map[string]interface{}) error {
-	lock := m.getLock(tenantID)
-	lock.Lock() // Exclusive write lock
-	defer lock.Unlock()
-
-	filePath := filepath.Join(m.dataDir, tenantID+".json")
-	bytes, err := json.MarshalIndent(data, "", "  ")
+	bytes, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(filePath, bytes, 0644)
+	_, err = m.db.Exec(`
+		INSERT INTO tenant_state (tenant_id, state_json, updated_at)
+		VALUES (?, ?, CURRENT_TIMESTAMP)
+		ON CONFLICT(tenant_id) DO UPDATE SET
+			state_json = excluded.state_json,
+			updated_at = CURRENT_TIMESTAMP`,
+		tenantID, string(bytes))
+	return err
 }
 
-// DeleteState removes the tenant's file so the next ReadState reprovisions from template
 func (m *TenantDBManager) DeleteState(tenantID string) error {
-	lock := m.getLock(tenantID)
-	lock.Lock()
-	defer lock.Unlock()
-
-	filePath := filepath.Join(m.dataDir, tenantID+".json")
-	err := os.Remove(filePath)
-	if os.IsNotExist(err) {
-		return nil
-	}
+	_, err := m.db.Exec("DELETE FROM tenant_state WHERE tenant_id = ?", tenantID)
 	return err
 }
 
-func (m *TenantDBManager) provisionTenant(targetPath string) error {
-	source, err := os.Open(m.templatePath)
+func (m *TenantDBManager) ListTenants() ([]string, error) {
+	rows, err := m.db.Query("SELECT tenant_id FROM tenant_state ORDER BY created_at")
 	if err != nil {
-		// Fallback to empty JSON object if template doesn't exist
-		return os.WriteFile(targetPath, []byte("{}"), 0644)
+		return nil, err
 	}
-	defer source.Close()
+	defer rows.Close()
 
-	destination, err := os.Create(targetPath)
-	if err != nil {
-		return err
+	var tenants []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		tenants = append(tenants, id)
 	}
-	defer destination.Close()
+	return tenants, rows.Err()
+}
 
-	_, err = io.Copy(destination, source)
+func (m *TenantDBManager) provisionTenant(tenantID string) error {
+	_, err := m.db.Exec("INSERT OR IGNORE INTO tenant_state (tenant_id, state_json) VALUES (?, '{}')", tenantID)
 	return err
+}
+
+// MigrateFromFiles seeds SQLite from legacy JSON files. No-op if dir doesn't exist or tenant already present.
+func (m *TenantDBManager) MigrateFromFiles(dataDir string) {
+	entries, err := os.ReadDir(dataDir)
+	if err != nil {
+		return
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+
+		tenantID := strings.TrimSuffix(entry.Name(), ".json")
+
+		var count int
+		m.db.QueryRow("SELECT COUNT(*) FROM tenant_state WHERE tenant_id = ?", tenantID).Scan(&count)
+		if count > 0 {
+			continue
+		}
+
+		data, err := os.ReadFile(filepath.Join(dataDir, entry.Name()))
+		if err != nil {
+			log.Printf("[DB] Migration skip %s: %v", entry.Name(), err)
+			continue
+		}
+
+		_, err = m.db.Exec("INSERT OR IGNORE INTO tenant_state (tenant_id, state_json) VALUES (?, ?)", tenantID, string(data))
+		if err != nil {
+			log.Printf("[DB] Migration failed %s: %v", tenantID, err)
+			continue
+		}
+		log.Printf("[DB] Migrated tenant: %s", tenantID)
+	}
 }

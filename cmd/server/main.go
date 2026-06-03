@@ -12,13 +12,21 @@ import (
 
 func main() {
 	chaosManager := chaos.NewManager()
-	dbManager := db.NewTenantDBManager("./data/tenants", "./data/template.json")
+
+	dbManager, err := db.NewTenantDBManager("./data/tenants.db")
+	if err != nil {
+		log.Fatalf("Failed to init DB: %v", err)
+	}
+	dbManager.MigrateFromFiles("./data/tenants")
 
 	mux := http.NewServeMux()
 
+	mux.Handle("/", http.FileServer(http.Dir("./public")))
 	mux.HandleFunc("POST /v1/chat/completions", adapter.TenantMiddleware(chaosManager.Middleware(adapter.HandleOpenAI)))
 	mux.HandleFunc("POST /mcp/message", adapter.TenantMiddleware(adapter.HandleMCPMessage(dbManager)))
 	mux.HandleFunc("POST /admin/reset", adapter.TenantMiddleware(adapter.HandleResetTenant(dbManager)))
+	mux.HandleFunc("POST /admin/chaos", adapter.TenantMiddleware(adapter.HandleSetChaos(chaosManager)))
+	mux.HandleFunc("GET /admin/tenants", adapter.HandleListTenants(dbManager))
 
 	port := ":8080"
 	fmt.Printf("🚀 llmplaceholder server running on http://localhost%s\n", port)

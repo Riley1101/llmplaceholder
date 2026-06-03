@@ -1,0 +1,88 @@
+{
+  "org": "Nexus Platform Inc.",
+  "deployments": [
+    {
+      "service": "api-gateway",
+      "version": "v2.4.1",
+      "status": "healthy",
+      "replicas": 5,
+      "region": "us-east-1",
+      "deployed_at": "2026-06-02T10:30:00Z",
+      "p99_latency_ms": 84
+    },
+    {
+      "service": "auth-service",
+      "version": "v1.9.3",
+      "status": "degraded",
+      "replicas": 3,
+      "region": "us-east-1",
+      "error_rate": "12.4%",
+      "p99_latency_ms": 1840,
+      "alert": "elevated 5xx on /oauth/token"
+    },
+    {
+      "service": "payment-processor",
+      "version": "v3.1.0",
+      "status": "healthy",
+      "replicas": 8,
+      "region": "us-east-1",
+      "deployed_at": "2026-06-01T22:00:00Z",
+      "p99_latency_ms": 210
+    },
+    {
+      "service": "notification-worker",
+      "version": "v0.7.2",
+      "status": "healthy",
+      "replicas": 2,
+      "region": "us-east-1",
+      "deployed_at": "2026-06-02T08:15:00Z",
+      "p99_latency_ms": 55
+    }
+  ],
+  "incidents": [
+    {
+      "id": "INC-2041",
+      "severity": "P2",
+      "title": "auth-service elevated error rate on /oauth/token",
+      "status": "INVESTIGATING",
+      "opened_at": "2026-06-02T13:45:00Z",
+      "oncall": "sarah.chen@nexus.io",
+      "affected_users_est": 320,
+      "runbook": "https://wiki.nexus.io/runbooks/auth-5xx"
+    },
+    {
+      "id": "INC-2040",
+      "severity": "P3",
+      "title": "CDN cache miss spike in EU region",
+      "status": "RESOLVED",
+      "opened_at": "2026-06-02T09:12:00Z",
+      "resolved_at": "2026-06-02T11:58:00Z",
+      "root_cause": "stale origin config after WAF rule deploy"
+    }
+  ],
+  "pipeline_runs": [
+    {
+      "id": "run-9921",
+      "branch": "main",
+      "status": "FAILED",
+      "stage": "integration-tests",
+      "duration_s": 312,
+      "triggered_by": "merge: PR#847",
+      "failure_log": "FAIL: TestOAuthFlowWithMFA (timeout after 30s)"
+    },
+    {
+      "id": "run-9920",
+      "branch": "feat/new-checkout",
+      "status": "SUCCESS",
+      "duration_s": 284,
+      "triggered_by": "push: d4f9a1c"
+    },
+    {
+      "id": "run-9919",
+      "branch": "main",
+      "status": "SUCCESS",
+      "duration_s": 271,
+      "triggered_by": "merge: PR#846"
+    }
+  ]
+}

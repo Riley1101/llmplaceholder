@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>llmplaceholder | Developer Portal</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/json-enc.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for JSON output */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
+
+    <header class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-10 shadow-lg">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+                llmplaceholder Mock Server
+            </h1>
+            <div class="flex items-center gap-4">
+                <label for="tenant-select" class="text-sm text-gray-400 font-semibold">Active Tenant Context:</label>
+                <select id="tenant-select" onchange="updateToolButtons()" class="bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2">
+                    <option value="tenant_homelab_admin">SRE / Homelab Admin</option>
+                    <option value="tenant_ecommerce">FinTech / E-Commerce</option>
+                    <option value="tenant_kernel_dev">Low-Level Kernel Dev</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+        
+        <section class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden flex flex-col h-[600px]">
+            <div class="bg-gray-700/50 p-3 border-b border-gray-700">
+                <h2 class="font-semibold text-blue-400">1. LLM Stream Simulation (/v1/chat/completions)</h2>
+            </div>
+            
+            <div id="chat-box" class="flex-1 p-4 overflow-y-auto font-mono text-sm space-y-4 text-gray-300">
+                <div class="text-gray-500 italic">System: Ready for prompts. Try asking about the invoice ledger or a kubernetes crash based on your active tenant.</div>
+            </div>
+
+            <div class="p-3 bg-gray-900 border-t border-gray-700 flex gap-2">
+                <input type="text" id="chat-input" placeholder="Enter prompt to trigger mock scenario..." class="flex-1 bg-gray-800 border border-gray-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" onkeypress="if(event.key === 'Enter') sendChat()">
+                <button onclick="sendChat()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-semibold transition-colors">Send</button>
+            </div>
+        </section>
+
+        <div class="space-y-6 flex flex-col h-[600px]">
+            
+            <section class="bg-gray-800 rounded-xl border border-gray-700 flex-1 flex flex-col overflow-hidden">
+                <div class="bg-gray-700/50 p-3 border-b border-gray-700">
+                    <h2 class="font-semibold text-emerald-400">2. MCP Tool Execution (/mcp/message)</h2>
+                </div>
+                
+                <div id="dynamic-tool-buttons" class="p-4 flex gap-3 flex-wrap">
+                    </div>
+
+                <div class="flex-1 bg-gray-900 border-t border-gray-700 p-0 relative overflow-hidden">
+                    <pre id="mcp-output" class="json-result p-4 text-xs font-mono text-emerald-300 h-full overflow-y-auto">{"status": "Waiting for JSON-RPC Request..."}</pre>
+                </div>
+            </section>
+
+            <section class="bg-gray-800 rounded-xl border border-red-900/50 flex flex-col h-[150px]">
+                <div class="bg-red-900/20 p-3 border-b border-red-900/50 flex justify-between items-center">
+                    <h2 class="font-semibold text-red-400">3. Control Plane (/admin/reset)</h2>
+                    <button hx-post="/admin/reset" hx-target="#admin-output" 
+                            class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-xs font-bold transition-colors">
+                        Wipe Tenant Sandbox
+                    </button>
+                </div>
+                <div class="flex-1 bg-gray-900 p-4 relative overflow-hidden">
+                    <pre id="admin-output" class="json-result text-xs font-mono text-red-300">{"status": "Ready"}</pre>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // --- HTMX GLOBAL CONFIGURATION ---
+        document.body.addEventListener('htmx:configRequest', function(evt) {
+            const tenantID = document.getElementById('tenant-select').value;
+            evt.detail.headers['X-Tenant-ID'] = tenantID;
+        });
+
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target.classList.contains('json-result')) {
+                try {
+                    const json = JSON.parse(evt.detail.target.innerText);
+                    evt.detail.target.innerText = JSON.stringify(json, null, 2);
+                } catch (e) {}
+            }
+        });
+
+        // --- DYNAMIC MCP BUTTON INJECTION ---
+        function updateToolButtons() {
+            const tenant = document.getElementById('tenant-select').value;
+            const container = document.getElementById('dynamic-tool-buttons');
+            
+            // The "List Tools" button is always present
+            let buttonsHTML = `
+                <button hx-post="/mcp/message" hx-ext="json-enc" hx-target="#mcp-output" 
+                        hx-vals='{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}'
+                        class="bg-gray-700 hover:bg-gray-600 border border-gray-500 px-3 py-1.5 rounded text-sm font-medium transition-colors shadow-sm">
+                    List All Tools
+                </button>
+            `;
+
+            // Swap specific tool buttons based on the tenant context
+            if (tenant === 'tenant_homelab_admin') {
+                buttonsHTML += `
+                    <button hx-post="/mcp/message" hx-ext="json-enc" hx-target="#mcp-output" 
+                            hx-vals='{"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "fetch_pod_metrics"}}'
+                            class="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/50 px-3 py-1.5 rounded text-sm font-medium transition-colors shadow-sm">
+                        Fetch Pod Metrics
+                    </button>
+                `;
+            } else if (tenant === 'tenant_ecommerce') {
+                buttonsHTML += `
+                    <button hx-post="/mcp/message" hx-ext="json-enc" hx-target="#mcp-output" 
+                            hx-vals='{"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "get_invoice_ledger"}}'
+                            class="bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/50 px-3 py-1.5 rounded text-sm font-medium transition-colors shadow-sm">
+                        Get Invoice Ledger
+                    </button>
+                `;
+            } else if (tenant === 'tenant_kernel_dev') {
+                buttonsHTML += `
+                    <button hx-post="/mcp/message" hx-ext="json-enc" hx-target="#mcp-output" 
+                            hx-vals='{"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "get_interrupt_logs"}}'
+                            class="bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 border border-purple-500/50 px-3 py-1.5 rounded text-sm font-medium transition-colors shadow-sm">
+                        Fetch Interrupt Logs
+                    </button>
+                `;
+            }
+
+            container.innerHTML = buttonsHTML;
+            
+            // 🚨 CRITICAL: When you inject new HTML containing `hx-` attributes via JavaScript, 
+            // you MUST call htmx.process() so HTMX knows to attach the event listeners to the new buttons!
+            htmx.process(container);
+            
+            // Optionally, clear the output box when context switches
+            document.getElementById('mcp-output').innerText = `{"status": "Switched context to ${tenant}. Waiting for request..."}`;
+        }
+
+        // Initialize the correct buttons when the page first loads
+        window.addEventListener('DOMContentLoaded', updateToolButtons);
+
+        // --- OPENAI SSE STREAMING PARSER ---
+        async function sendChat() {
+            const input = document.getElementById('chat-input');
+            const box = document.getElementById('chat-box');
+            const tenantID = document.getElementById('tenant-select').value;
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            box.innerHTML += `<div class="text-blue-400">> User: ${prompt}</div><div class="text-gray-300" id="current-stream"></div>`;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+
+            const streamDiv = document.getElementById('current-stream');
+            streamDiv.removeAttribute('id'); 
+
+            try {
+                const response = await fetch('/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Tenant-ID': tenantID
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o",
+                        stream: true,
+                        messages: [{role: "user", content: prompt}]
+                    })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, {stream: true});
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.choices[0].delta.content) {
+                                    let text = data.choices[0].delta.content.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>');
+                                    streamDiv.innerHTML += text;
+                                    box.scrollTop = box.scrollHeight;
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                }
+            } catch (error) {
+                streamDiv.innerHTML += `<span class="text-red-500">[Connection Error: Server might be down]</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
