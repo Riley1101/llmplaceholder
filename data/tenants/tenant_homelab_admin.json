@@ -1,0 +1,33 @@
+{
+  "hypervisor_nodes": [
+    {
+      "node_id": "px-node-01",
+      "uptime_days": 42,
+      "cpu_load_percent": 18.4,
+      "ram_usage_gb": 32.1,
+      "ram_total_gb": 64.0
+    }
+  ],
+  "zfs_storage_pools": [
+    {
+      "pool_name": "tank",
+      "state": "DEGRADED",
+      "capacity_percent": 78,
+      "vdevs": [
+        {"disk": "nvme0n1", "status": "ONLINE"},
+        {"disk": "nvme1n1", "status": "UNAVAIL", "errors": 142}
+      ]
+    },
+    {
+      "pool_name": "fast_cache",
+      "state": "ONLINE",
+      "capacity_percent": 22,
+      "vdevs": [{"disk": "nvme2n1", "status": "ONLINE"}]
+    }
+  ],
+  "lxc_containers": [
+    {"vmid": 100, "hostname": "nextcloud-app", "status": "running", "ip": "10.0.0.45"},
+    {"vmid": 101, "hostname": "jellyfin-media", "status": "running", "ip": "10.0.0.46"},
+    {"vmid": 102, "hostname": "cloudflare-tunnel", "status": "stopped", "ip": "10.0.0.47"}
+  ]
+}

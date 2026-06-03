@@ -82,6 +82,20 @@ func (m *TenantDBManager) WriteState(tenantID string, data map[string]interface{
 	return os.WriteFile(filePath, bytes, 0644)
 }
 
+// DeleteState removes the tenant's file so the next ReadState reprovisions from template
+func (m *TenantDBManager) DeleteState(tenantID string) error {
+	lock := m.getLock(tenantID)
+	lock.Lock()
+	defer lock.Unlock()
+
+	filePath := filepath.Join(m.dataDir, tenantID+".json")
+	err := os.Remove(filePath)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	return err
+}
+
 func (m *TenantDBManager) provisionTenant(targetPath string) error {
 	source, err := os.Open(m.templatePath)
 	if err != nil {

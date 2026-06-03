@@ -1,0 +1,30 @@
+{
+  "billing_cycle": "Q2-2026",
+  "active_subscriptions": 1402,
+  "mrr_usd": 42500.00,
+  "recent_invoices": [
+    {
+      "invoice_id": "INV-2026-X4",
+      "customer": "Revilo Recruiting",
+      "amount": 450.00,
+      "status": "PAID",
+      "date": "2026-05-15T09:00:00Z"
+    },
+    {
+      "invoice_id": "INV-2026-X5",
+      "customer": "Acme Corp",
+      "amount": 1200.00,
+      "status": "OVERDUE",
+      "date": "2026-05-01T09:00:00Z"
+    }
+  ],
+  "support_tickets": [
+    {
+      "ticket_id": "TK-992",
+      "user_email": "billing@acmecorp.com",
+      "issue": "Overcharge on May invoice, requested natural gas conversion credit not applied.",
+      "status": "OPEN",
+      "priority": "HIGH"
+    }
+  ]
+}

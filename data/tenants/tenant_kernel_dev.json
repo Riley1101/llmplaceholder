@@ -1,0 +1,18 @@
+{
+  "system_architecture": "x86_64",
+  "boot_status": "kernel_panic",
+  "gdt_entries": [
+    {"selector": "0x00", "type": "NULL", "base": "0x0", "limit": "0x0"},
+    {"selector": "0x08", "type": "CODE_RING0", "base": "0x0", "limit": "0xFFFFF", "flags": "0xCF"},
+    {"selector": "0x10", "type": "DATA_RING0", "base": "0x0", "limit": "0xFFFFF", "flags": "0x8F"}
+  ],
+  "interrupt_logs": [
+    {"vector": 13, "name": "General Protection Fault", "timestamp": "2026-06-02T14:22:10Z", "error_code": "0x0000"},
+    {"vector": 14, "name": "Page Fault", "timestamp": "2026-06-02T14:22:11Z", "error_code": "0x0002", "cr2": "0x00000000DEADBEEF"}
+  ],
+  "apic_state": {
+    "local_apic_base": "0xFEE00000",
+    "spurious_interrupt_vector": 255,
+    "timer_mode": "periodic"
+  }
+}

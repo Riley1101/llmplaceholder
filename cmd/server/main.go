@@ -17,7 +17,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /v1/chat/completions", adapter.TenantMiddleware(chaosManager.Middleware(adapter.HandleOpenAI)))
-	mux.HandleFunc("POST /mcp/message", adapter.TenantMiddleware(adapter.HandleMCPMessage))
+	mux.HandleFunc("POST /mcp/message", adapter.TenantMiddleware(adapter.HandleMCPMessage(dbManager)))
 	mux.HandleFunc("POST /admin/reset", adapter.TenantMiddleware(adapter.HandleResetTenant(dbManager)))
 
 	port := ":8080"
