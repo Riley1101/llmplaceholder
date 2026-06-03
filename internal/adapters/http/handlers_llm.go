@@ -30,6 +30,12 @@ func HandleOpenAI(dbManager *db.TenantDBManager) http.HandlerFunc {
 		tenantScenarios, _ := dbManager.GetScenariosForTenant(tenantID)
 		scenario := registry.MatchIntentForTenant(prompt, tenantScenarios)
 
+		if !req.Stream {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			json.NewEncoder(w).Encode(chronos.BuildOpenAI(req.Model, scenario.FullResponse))
+			return
+		}
+
 		w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
