@@ -31,6 +31,8 @@ func HandleMCPMessage(dbManager *db.TenantDBManager) http.HandlerFunc {
 			ID:      req.ID,
 		}
 
+		tenantScenarios, _ := dbManager.GetScenariosForTenant(tenantID)
+
 		switch req.Method {
 		case "tools/call":
 			var params struct {
@@ -41,9 +43,9 @@ func HandleMCPMessage(dbManager *db.TenantDBManager) http.HandlerFunc {
 				break
 			}
 
-			scenario := registry.MatchTool(params.Name)
+			scenario := registry.MatchToolForTenant(params.Name, tenantScenarios)
 
-			// Use tenant-specific data when available; fall back to global mock
+			// Use tenant DB state if the scenario has a StateKey
 			toolData := scenario.MCPToolData
 			if scenario.StateKey != "" {
 				if tenantState, err := dbManager.ReadState(tenantID); err == nil {
@@ -62,7 +64,7 @@ func HandleMCPMessage(dbManager *db.TenantDBManager) http.HandlerFunc {
 
 		case "tools/list":
 			resp.Result = map[string]interface{}{
-				"tools": registry.ListTools(),
+				"tools": registry.ListToolsForTenant(tenantScenarios),
 			}
 
 		default:

@@ -21,12 +21,32 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	// Dashboard + static assets
 	mux.Handle("/", http.FileServer(http.Dir("./public")))
-	mux.HandleFunc("POST /v1/chat/completions", adapter.TenantMiddleware(chaosManager.Middleware(adapter.HandleOpenAI)))
-	mux.HandleFunc("POST /mcp/message", adapter.TenantMiddleware(adapter.HandleMCPMessage(dbManager)))
-	mux.HandleFunc("POST /admin/reset", adapter.TenantMiddleware(adapter.HandleResetTenant(dbManager)))
-	mux.HandleFunc("POST /admin/chaos", adapter.TenantMiddleware(adapter.HandleSetChaos(chaosManager)))
-	mux.HandleFunc("GET /admin/tenants", adapter.HandleListTenants(dbManager))
+
+	// ── LLM / MCP ────────────────────────────────────────────────────────────
+	mux.HandleFunc("POST /v1/chat/completions",
+		adapter.TenantMiddleware(chaosManager.Middleware(adapter.HandleOpenAI(dbManager))))
+	mux.HandleFunc("POST /mcp/message",
+		adapter.TenantMiddleware(adapter.HandleMCPMessage(dbManager)))
+
+	// ── Admin — tenant CRUD ───────────────────────────────────────────────────
+	mux.HandleFunc("GET /admin/tenants",              adapter.HandleListTenants(dbManager))
+	mux.HandleFunc("POST /admin/tenants",             adapter.HandleCreateTenant(dbManager))
+	mux.HandleFunc("GET /admin/tenants/{id}",         adapter.HandleGetTenant(dbManager))
+	mux.HandleFunc("PUT /admin/tenants/{id}/state",   adapter.HandleUpdateTenantState(dbManager))
+	mux.HandleFunc("DELETE /admin/tenants/{id}",      adapter.HandleDeleteTenant(dbManager))
+
+	// ── Admin — scenario CRUD ─────────────────────────────────────────────────
+	mux.HandleFunc("GET /admin/tenants/{id}/scenarios",          adapter.HandleListScenarios(dbManager))
+	mux.HandleFunc("POST /admin/tenants/{id}/scenarios",         adapter.HandleCreateScenario(dbManager))
+	mux.HandleFunc("DELETE /admin/tenants/{id}/scenarios/{sid}", adapter.HandleDeleteScenario(dbManager))
+
+	// ── Admin — chaos ─────────────────────────────────────────────────────────
+	mux.HandleFunc("GET /admin/tenants/{id}/chaos",  adapter.HandleGetTenantChaos(chaosManager))
+	mux.HandleFunc("POST /admin/tenants/{id}/chaos", adapter.HandleSetTenantChaos(chaosManager))
+	mux.HandleFunc("POST /admin/chaos",              adapter.TenantMiddleware(adapter.HandleSetChaos(chaosManager)))
+	mux.HandleFunc("POST /admin/reset",              adapter.TenantMiddleware(adapter.HandleResetTenant(dbManager)))
 
 	port := ":8080"
 	fmt.Printf("🚀 llmplaceholder server running on http://localhost%s\n", port)

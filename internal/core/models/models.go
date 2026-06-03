@@ -26,6 +26,16 @@ type MockScenario struct {
 	StateKey     string // root key to extract from tenant DB; empty means no tenant override
 }
 
+// TenantScenario is a user-defined scenario stored per-tenant in SQLite
+type TenantScenario struct {
+	ID       string      `json:"id"`
+	TenantID string      `json:"tenant_id"`
+	Keywords []string    `json:"keywords"`
+	Response string      `json:"response"`
+	ToolName string      `json:"tool_name,omitempty"`
+	ToolData interface{} `json:"tool_data,omitempty"`
+}
+
 // OpenAIChatRequest represents standard /v1/chat/completions payload
 type OpenAIChatRequest struct {
 	Model    string `json:"model"`
