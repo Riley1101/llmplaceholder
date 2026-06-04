@@ -26,10 +26,16 @@ func main() {
 	}
 	dbManager.MigrateFromFiles("./data/tenants")
 
+	if err := adapter.LoadTemplates("./frontend/templates"); err != nil {
+		log.Fatalf("Failed to load templates: %v", err)
+	}
+
 	mux := http.NewServeMux()
 
-	// Dashboard + static assets
-	mux.Handle("/", http.FileServer(http.Dir("./frontend")))
+	// Pages + static assets
+	mux.HandleFunc("/", adapter.HandleIndex())
+	mux.HandleFunc("/playground", adapter.HandlePlayground())
+	mux.Handle("/assets/", http.FileServer(http.Dir("./frontend")))
 
 	// ── LLM / MCP ────────────────────────────────────────────────────────────
 	mux.HandleFunc("POST /v1/chat/completions",

@@ -1,53 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>llmplaceholder — Fake LLM APIs for testing</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/styles.css">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            base:    '#0d1117',
-            surface: '#161b27',
-            raised:  '#1e2333',
-            accent:  '#10d9a3',
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
-          },
-        },
-      },
-    }
-  </script>
-</head>
-<body class="bg-base font-sans text-slate-200 antialiased">
-
-<!-- ── Nav ───────────────────────────────────────────────────────────────── -->
-<nav class="sticky top-0 z-50 bg-base/90 backdrop-blur border-b border-slate-800">
-  <div class="max-w-5xl mx-auto px-6 h-14 flex items-center gap-6">
-    <a href="/" class="flex items-center gap-2.5 shrink-0">
-      <span class="w-8 h-8 rounded-lg bg-accent/10 border border-accent/30 grid place-items-center font-mono text-[11px] font-bold text-accent">LP</span>
-      <span class="text-sm font-bold text-white">llmplaceholder</span>
-    </a>
-    <div class="hidden sm:flex gap-1 flex-1">
-      <a href="#guide"      class="text-[13px] font-medium text-slate-400 hover:text-white hover:bg-slate-800/70 px-3 py-1.5 rounded-md transition-colors">Guide</a>
-      <a href="#routes"     class="text-[13px] font-medium text-slate-400 hover:text-white hover:bg-slate-800/70 px-3 py-1.5 rounded-md transition-colors">Routes</a>
-      <a href="#tenants"    class="text-[13px] font-medium text-slate-400 hover:text-white hover:bg-slate-800/70 px-3 py-1.5 rounded-md transition-colors">Tenants</a>
-      <a href="#playground" class="text-[13px] font-medium text-slate-400 hover:text-white hover:bg-slate-800/70 px-3 py-1.5 rounded-md transition-colors">Playground</a>
-    </div>
-    <a href="/admin/tenants" target="_blank" rel="noreferrer"
-       class="shrink-0 text-xs font-semibold text-accent border border-accent/30 rounded-full px-3.5 py-1.5 hover:bg-accent/10 transition-colors">
-      Admin API ↗
-    </a>
-  </div>
-</nav>
+{{define "content"}}
 
 <!-- ── Hero ──────────────────────────────────────────────────────────────── -->
 <section class="py-20 px-6 border-b border-slate-800" id="guide">
@@ -63,7 +14,7 @@
       No API key. No rate limits. Just HTTP.
     </p>
     <div class="flex gap-3 flex-wrap mb-12">
-      <a href="#playground" class="bg-accent text-[#071a13] text-sm font-bold px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity cursor-pointer">Open playground →</a>
+      <a href="/playground" class="bg-accent text-[#071a13] text-sm font-bold px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity cursor-pointer">Open playground →</a>
       <a href="#routes" class="text-slate-200 text-sm font-medium px-5 py-2.5 rounded-full border border-slate-700 hover:bg-slate-800 hover:border-slate-600 transition-colors">View all routes</a>
     </div>
 
@@ -153,7 +104,6 @@ response = client.chat.completions.create(
     </p>
 
     <div class="space-y-8">
-      <!-- LLM -->
       <div>
         <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">LLM</p>
         <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
@@ -170,7 +120,6 @@ response = client.chat.completions.create(
         </div>
       </div>
 
-      <!-- Tenants -->
       <div>
         <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">Tenants</p>
         <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
@@ -202,7 +151,6 @@ response = client.chat.completions.create(
         </div>
       </div>
 
-      <!-- Scenarios -->
       <div>
         <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">Scenarios</p>
         <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
@@ -224,7 +172,6 @@ response = client.chat.completions.create(
         </div>
       </div>
 
-      <!-- Chaos -->
       <div>
         <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">Chaos</p>
         <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
@@ -263,106 +210,21 @@ response = client.chat.completions.create(
   </div>
 </section>
 
-<!-- ── Playground ─────────────────────────────────────────────────────────── -->
-<section class="py-16 px-6 bg-surface border-b border-slate-800" id="playground">
-  <div class="max-w-5xl mx-auto">
-    <h2 class="text-2xl font-bold text-white mb-2 tracking-tight">Playground</h2>
-    <p class="text-sm text-slate-500 mb-8 max-w-[62ch]">Fire a live request against the running server. Pick a tenant, edit the body, send.</p>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 bg-raised border border-slate-800 rounded-2xl overflow-hidden" style="min-height:480px">
-
-      <!-- Request -->
-      <div class="flex flex-col gap-5 p-6 border-b lg:border-b-0 lg:border-r border-slate-800">
-        <div class="flex flex-col gap-1.5">
-          <label class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Tenant</label>
-          <select id="pg-tenant"
-            class="cursor-pointer bg-base border border-slate-700 text-slate-200 text-[13px] font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-accent/40">
-            <option value="">Loading…</option>
-          </select>
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <label class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Protocol</label>
-          <div class="flex gap-2">
-            <button id="proto-openai" onclick="setProtocol('openai',this)"
-              class="proto-btn cursor-pointer px-4 py-1.5 rounded-full text-[12.5px] font-semibold bg-accent/10 text-accent border border-accent/25 transition-colors">OpenAI</button>
-            <button id="proto-mcp" onclick="setProtocol('mcp',this)"
-              class="proto-btn cursor-pointer px-4 py-1.5 rounded-full text-[12.5px] font-semibold text-slate-400 border border-slate-700 hover:text-slate-200 hover:border-slate-600 transition-colors">MCP</button>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2 bg-base border border-slate-700 rounded-lg px-3 py-2">
-          <span class="badge-post shrink-0">POST</span>
-          <code id="pg-endpoint" class="font-mono text-[13px] text-slate-200">/v1/chat/completions</code>
-        </div>
-
-        <div class="flex flex-col gap-1.5 flex-1">
-          <label class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Request body</label>
-          <textarea id="pg-body" spellcheck="false"
-            class="flex-1 min-h-[180px] bg-base border border-slate-700 rounded-lg text-[12.5px] font-mono text-slate-300 leading-relaxed px-4 py-3.5 resize-y w-full focus:outline-none focus:border-accent/40"></textarea>
-        </div>
-
-        <button onclick="sendRequest()"
-          class="cursor-pointer w-full bg-accent text-[#071a13] font-bold text-sm rounded-full py-2.5 hover:opacity-90 transition-opacity">
-          <span id="send-label">Send Request</span>
-        </button>
-      </div>
-
-      <!-- Response -->
-      <div class="flex flex-col">
-        <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-black/20">
-          <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Response</span>
-          <span id="response-status" class="font-mono text-[11px] font-bold"></span>
-        </div>
-        <pre id="pg-output"
-          class="flex-1 p-5 font-mono text-[12px] text-slate-400 leading-relaxed overflow-auto whitespace-pre-wrap break-words">// Hit "Send Request" to see the response here.</pre>
-      </div>
+<!-- ── Playground CTA ─────────────────────────────────────────────────────── -->
+<section class="py-16 px-6 bg-surface border-b border-slate-800">
+  <div class="max-w-5xl mx-auto flex items-center justify-between gap-6 flex-wrap">
+    <div>
+      <h2 class="text-2xl font-bold text-white mb-1 tracking-tight">Playground</h2>
+      <p class="text-sm text-slate-500 max-w-[52ch]">Interactive request builder — pick a tenant, edit the body, fire live requests, stream responses.</p>
     </div>
+    <a href="/playground"
+       class="shrink-0 bg-accent text-[#071a13] text-sm font-bold px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+      Open playground →
+    </a>
   </div>
 </section>
 
-<!-- ── Footer ─────────────────────────────────────────────────────────────── -->
-<footer class="py-7 px-6">
-  <div class="max-w-5xl mx-auto flex items-center gap-6 flex-wrap">
-    <span class="text-[13px] font-bold text-slate-300">llmplaceholder</span>
-    <span class="text-[13px] text-slate-600 flex-1">Fake LLM APIs for integration testing · No signup · No API key</span>
-    <a href="/admin/tenants" target="_blank" rel="noreferrer"
-       class="text-[13px] text-accent hover:underline">Admin API ↗</a>
-  </div>
-</footer>
-
 <script>
-  // ── Domain hints per tenant
-  const HINTS = {
-    ecommerce: "Show me recent invoices and overdue accounts",
-    devops:    "What is the current deployment status?",
-    homelab:   "List all my home lab servers",
-    kernel:    "Help me debug this kernel panic",
-    legal:     "Summarize key clauses in this contract",
-    retail:    "Check current inventory levels",
-    saas:      "What is our current MRR and churn rate?",
-    security:  "Show recent security alerts and incidents",
-  };
-
-  function getHint(id) {
-    for (const [k, v] of Object.entries(HINTS)) {
-      if (id.includes(k)) return v;
-    }
-    return "Hello! What can you help me with?";
-  }
-
-  function makeOpenAIBody(tenantId) {
-    return JSON.stringify({
-      model: "gpt-4o",
-      messages: [{ role: "user", content: getHint(tenantId) }],
-      stream: true,
-    }, null, 2);
-  }
-
-  const MCP_BODY = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }, null, 2);
-  let currentProtocol = "openai";
-
-  // ── Quick-start tabs
   const QS_ON  = "qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-white bg-base border border-slate-700 border-b-[#0d1117] -mb-px rounded-t-md";
   const QS_OFF = "qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md";
 
@@ -373,18 +235,13 @@ response = client.chat.completions.create(
     document.getElementById("qs-" + name).classList.remove("hidden");
   }
 
-  // ── Load tenants
   async function loadTenants() {
     const grid = document.getElementById("tenant-grid");
     grid.innerHTML = `<div class="col-span-full text-sm text-slate-500 py-6 px-5 border border-dashed border-slate-700 rounded-xl text-center">Loading tenants…</div>`;
     try {
-      const res    = await fetch("/admin/tenants");
-      const data   = await res.json();
+      const res     = await fetch("/admin/tenants");
+      const data    = await res.json();
       const tenants = data.tenants || [];
-
-      const sel = document.getElementById("pg-tenant");
-      sel.innerHTML = tenants.map(t => `<option value="${t}">${t}</option>`).join("");
-      if (tenants.length) document.getElementById("pg-body").value = makeOpenAIBody(tenants[0]);
 
       if (!tenants.length) {
         grid.innerHTML = `<div class="col-span-full text-sm text-slate-500 py-6 px-5 border border-dashed border-slate-700 rounded-xl text-center">No tenants. Create one via POST /admin/tenants.</div>`;
@@ -405,10 +262,10 @@ response = client.chat.completions.create(
             <a href="/admin/tenants/${t}/chaos" target="_blank"
                class="text-[11.5px] font-medium text-slate-400 bg-base border border-slate-800 rounded-full px-3 py-1 hover:text-accent hover:border-accent/30 transition-colors">chaos ↗</a>
           </div>
-          <button onclick="tryTenant('${t}')"
-            class="cursor-pointer mt-auto bg-accent/10 text-accent border border-accent/20 rounded-full py-2 text-[13px] font-semibold hover:bg-accent/20 transition-colors">
+          <a href="/playground?tenant=${encodeURIComponent(t)}"
+            class="cursor-pointer mt-auto bg-accent/10 text-accent border border-accent/20 rounded-full py-2 text-[13px] font-semibold hover:bg-accent/20 transition-colors text-center">
             Try in playground →
-          </button>
+          </a>
         </div>
       `).join("");
     } catch (e) {
@@ -416,81 +273,7 @@ response = client.chat.completions.create(
     }
   }
 
-  // ── Per-tenant shortcut
-  function tryTenant(id) {
-    document.getElementById("pg-tenant").value = id;
-    if (currentProtocol === "openai") document.getElementById("pg-body").value = makeOpenAIBody(id);
-    document.getElementById("playground").scrollIntoView({ behavior: "smooth" });
-  }
-
-  // ── Protocol toggle
-  const PROTO_ON  = "proto-btn cursor-pointer px-4 py-1.5 rounded-full text-[12.5px] font-semibold bg-accent/10 text-accent border border-accent/25 transition-colors";
-  const PROTO_OFF = "proto-btn cursor-pointer px-4 py-1.5 rounded-full text-[12.5px] font-semibold text-slate-400 border border-slate-700 hover:text-slate-200 hover:border-slate-600 transition-colors";
-
-  function setProtocol(proto, btn) {
-    currentProtocol = proto;
-    document.querySelectorAll(".proto-btn").forEach(b => { b.className = PROTO_OFF; });
-    btn.className = PROTO_ON;
-    document.getElementById("pg-endpoint").textContent =
-      proto === "openai" ? "/v1/chat/completions" : "/mcp/message";
-    const tid = document.getElementById("pg-tenant").value;
-    document.getElementById("pg-body").value = proto === "openai" ? makeOpenAIBody(tid) : MCP_BODY;
-  }
-
-  // ── Send request
-  async function sendRequest() {
-    const tenantId = document.getElementById("pg-tenant").value;
-    const body     = document.getElementById("pg-body").value;
-    const output   = document.getElementById("pg-output");
-    const statusEl = document.getElementById("response-status");
-    const label    = document.getElementById("send-label");
-
-    if (!tenantId) { output.textContent = "Error: select a tenant first."; return; }
-
-    const endpoint = currentProtocol === "openai" ? "/v1/chat/completions" : "/mcp/message";
-    label.textContent = "Sending…";
-    output.textContent = "";
-    statusEl.textContent = "";
-    statusEl.className = "font-mono text-[11px] font-bold";
-
-    try {
-      const res = await fetch(endpoint, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json", "X-Tenant-ID": tenantId },
-        body,
-      });
-
-      statusEl.textContent = res.status + " " + res.statusText;
-      statusEl.className   = "font-mono text-[11px] font-bold rounded-full px-2.5 py-0.5 " +
-        (res.ok ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10");
-
-      const ct = res.headers.get("content-type") || "";
-      if (ct.includes("event-stream")) {
-        const reader  = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buf = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buf += decoder.decode(value, { stream: true });
-          output.textContent = buf;
-        }
-      } else {
-        const text = await res.text();
-        try        { output.textContent = JSON.stringify(JSON.parse(text), null, 2); }
-        catch (_)  { output.textContent = text; }
-      }
-    } catch (e) {
-      output.textContent   = "Network error: " + e.message;
-      statusEl.textContent = "ERROR";
-      statusEl.className   = "font-mono text-[11px] font-bold text-red-400 bg-red-400/10 rounded-full px-2.5 py-0.5";
-    } finally {
-      label.textContent = "Send Request";
-    }
-  }
-
-  // ── Boot
   loadTenants();
 </script>
-</body>
-</html>
+
+{{end}}

@@ -1,0 +1,61 @@
+{{define "tenant-panel"}}
+<section class="tenant-panel card">
+  <div class="card-head tenant-panel-head">
+    <div>
+      <p class="eyebrow">Selected tenant</p>
+      <h2>{{.TenantID}}</h2>
+    </div>
+    <div class="tenant-pill">Active</div>
+  </div>
+  <div class="tenant-tabs">
+    <button type="button" class="tenant-tab {{activeClass .ActiveTab "overview"}}"
+      hx-get="/ui/tenants/{{.PathID}}/overview"
+      hx-target="#tenant-detail"
+      hx-swap="innerHTML">Overview</button>
+    <button type="button" class="tenant-tab {{activeClass .ActiveTab "mcp"}}"
+      hx-get="/ui/tenants/{{.PathID}}/mcp"
+      hx-target="#tenant-detail"
+      hx-swap="innerHTML">MCP</button>
+  </div>
+  <div class="tenant-panel-body">
+    {{if eq .ActiveTab "overview"}}{{template "tenant-overview-body" .}}{{end}}
+    {{if eq .ActiveTab "mcp"}}{{template "tenant-mcp-body" .}}{{end}}
+  </div>
+</section>
+{{end}}
+
+{{define "tenant-overview-body"}}
+<div class="detail-grid">
+  <div class="detail-card">
+    <p class="eyebrow">Tenant state</p>
+    <p class="detail-value">{{.TenantID}}</p>
+    <p class="detail-note">This tenant is provisioned through the backend SQLite store and can be used for admin and MCP flows.</p>
+  </div>
+  <div class="detail-card">
+    <p class="eyebrow">Quick links</p>
+    <ul class="detail-list">
+      <li><span>Admin state</span><em>/admin/tenants/{{.PathID}}</em></li>
+      <li><span>Chaos profile</span><em>/admin/tenants/{{.PathID}}/chaos</em></li>
+      <li><span>MCP transport</span><em>header-based</em></li>
+    </ul>
+  </div>
+</div>
+{{end}}
+
+{{define "tenant-mcp-body"}}
+<div class="detail-grid">
+  <div class="detail-card">
+    <p class="eyebrow">MCP tab</p>
+    <h3>Tenant-scoped JSON-RPC</h3>
+    <p class="detail-note">This tab keeps the MCP flow attached to {{.TenantID}} instead of exposing it as a global top-level panel.</p>
+  </div>
+  <div class="detail-card">
+    <p class="eyebrow">Request</p>
+    <pre class="code-block">POST /mcp/message
+X-Tenant-ID: {{.TenantID}}
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}</pre>
+  </div>
+</div>
+{{end}}
