@@ -1,26 +1,19 @@
-{{define "nav"}}{{end}}
 {{define "footer"}}{{end}}
 
 {{define "content"}}
-<div class="flex flex-col h-screen bg-base text-slate-200">
+<div class="flex flex-col bg-base text-slate-200" style="height:calc(100vh - 3.5rem)">
 
-  <!-- ── Tab bar ──────────────────────────────────────────────────────────── -->
-  <header class="shrink-0 h-12 flex items-center gap-1 px-4 border-b border-slate-800 bg-surface">
-    <a href="/" class="flex items-center gap-2 mr-5 shrink-0">
-      <span class="w-7 h-7 rounded-lg bg-accent/10 border border-accent/30 grid place-items-center font-mono text-[10px] font-bold text-accent">LP</span>
-      <span class="text-sm font-bold text-white hidden sm:block">llmplaceholder</span>
-    </a>
+  <!-- ── Tab strip ─────────────────────────────────────────────────────────── -->
+  <div class="shrink-0 flex items-center gap-1 px-4 border-b border-slate-800">
     <button onclick="showPanel('playground')" data-panel="playground"
-      class="dash-tab active px-4 h-8 text-[13px] font-semibold rounded-md transition-colors">
+      class="dash-tab active px-4 h-10 text-[13px] font-semibold transition-colors">
       Playground
     </button>
     <button onclick="showPanel('tenants')" data-panel="tenants"
-      class="dash-tab px-4 h-8 text-[13px] font-semibold rounded-md transition-colors">
+      class="dash-tab px-4 h-10 text-[13px] font-semibold transition-colors">
       Tenants
     </button>
-    <div class="flex-1"></div>
-    <a href="/" class="text-[12px] font-medium text-slate-500 hover:text-slate-300 transition-colors shrink-0">← Home</a>
-  </header>
+  </div>
 
   <!-- ── Playground panel ─────────────────────────────────────────────────── -->
   <div id="panel-playground" class="flex flex-1 min-h-0">
@@ -256,9 +249,9 @@
 
 <style>
   .label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgb(100 116 139); }
-  .dash-tab { color:rgb(100 116 139); }
-  .dash-tab:hover { color:white; background:rgb(30 35 51); }
-  .dash-tab.active { color:white; background:rgb(30 35 51); }
+  .dash-tab { color:rgb(100 116 139); border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .dash-tab:hover { color:white; }
+  .dash-tab.active { color:white; border-bottom-color:rgb(16 217 163); }
   .detail-tab { color:rgb(100 116 139); }
   .detail-tab:hover { color:white; }
   .detail-tab.active { color:white; border-bottom:2px solid rgb(16 217 163); }
