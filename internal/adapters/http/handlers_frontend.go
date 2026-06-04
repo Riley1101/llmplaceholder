@@ -39,6 +39,12 @@ func HandleIndex() http.HandlerFunc {
 	}
 }
 
+func HandleRoutes() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		render(w, "routes", nil)
+	}
+}
+
 func HandlePlayground() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		render(w, "playground", nil)

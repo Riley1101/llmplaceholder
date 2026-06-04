@@ -34,6 +34,7 @@ func main() {
 
 	// Pages + static assets
 	mux.HandleFunc("/", adapter.HandleIndex())
+	mux.HandleFunc("/routes", adapter.HandleRoutes())
 	mux.HandleFunc("/playground", adapter.HandlePlayground())
 	mux.Handle("/assets/", http.FileServer(http.Dir("./frontend")))
 

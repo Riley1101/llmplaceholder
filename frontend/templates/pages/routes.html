@@ -1,0 +1,305 @@
+{{define "content"}}
+
+<!-- ── Page header ───────────────────────────────────────────────────────── -->
+<section class="py-14 px-6 border-b border-slate-800">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-3xl font-extrabold tracking-tight text-white mb-2">Routes &amp; Guide</h1>
+    <p class="text-[15px] text-slate-400 max-w-[58ch]">
+      Quick-start examples, full endpoint reference for LLM, MCP, and admin APIs, plus live tenant info.
+    </p>
+  </div>
+</section>
+
+<!-- ── Quick start ───────────────────────────────────────────────────────── -->
+<section class="py-14 px-6 border-b border-slate-800" id="quickstart">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-xl font-bold text-white mb-6 tracking-tight">Quick start</h2>
+
+    <div class="bg-surface border border-slate-800 rounded-2xl overflow-hidden max-w-2xl">
+      <div class="flex px-3 pt-2.5 border-b border-slate-800 gap-0.5">
+        <button id="tab-curl"   onclick="showTab('curl',this)"
+          class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-white bg-base border border-slate-700 border-b-[#0d1117] -mb-px rounded-t-md">curl</button>
+        <button id="tab-js"     onclick="showTab('js',this)"
+          class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">JavaScript</button>
+        <button id="tab-python" onclick="showTab('python',this)"
+          class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">Python</button>
+        <button id="tab-mcp"    onclick="showTab('mcp',this)"
+          class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">MCP</button>
+      </div>
+      <div class="bg-base">
+        <pre id="qs-curl" class="p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">curl -X POST http://localhost:8080/v1/chat/completions \
+  -H "X-Tenant-ID: tenant_ecommerce" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4o",
+    "messages": [{"role":"user","content":"Show me recent invoices"}],
+    "stream": true
+  }'</pre>
+        <pre id="qs-js" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">const res = await fetch("http://localhost:8080/v1/chat/completions", {
+  method: "POST",
+  headers: {
+    "X-Tenant-ID": "tenant_ecommerce",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "gpt-4o",
+    messages: [{ role: "user", content: "Show me recent invoices" }],
+    stream: true,
+  }),
+});
+// consume SSE stream
+const reader = res.body.getReader();
+// ...</pre>
+        <pre id="qs-python" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">import openai
+
+client = openai.OpenAI(
+    base_url="http://localhost:8080",
+    api_key="placeholder",
+    default_headers={"X-Tenant-ID": "tenant_ecommerce"},
+)
+
+for chunk in client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Show me recent invoices"}],
+    stream=True,
+):
+    print(chunk.choices[0].delta.content or "", end="")</pre>
+        <pre id="qs-mcp" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre"># List tools
+curl -X POST http://localhost:8080/mcp/message \
+  -H "X-Tenant-ID: tenant_ecommerce" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+
+# Call a tool
+curl -X POST http://localhost:8080/mcp/message \
+  -H "X-Tenant-ID: tenant_ecommerce" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_invoice_ledger"}}'
+
+# SSE transport (legacy 2024-11-05 spec)
+curl -N http://localhost:8080/mcp/sse \
+  -H "X-Tenant-ID: tenant_ecommerce" \
+  -H "Accept: text/event-stream"</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LLM routes ────────────────────────────────────────────────────────── -->
+<section class="py-14 px-6 border-b border-slate-800" id="llm">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-xl font-bold text-white mb-1 tracking-tight">LLM</h2>
+    <p class="text-sm text-slate-500 mb-6">Requires <code class="ic">X-Tenant-ID</code> header.</p>
+    <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
+      <div class="flex items-start gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors">
+        <span class="badge-post shrink-0 mt-0.5">POST</span>
+        <code class="font-mono text-[13px] text-slate-200 shrink-0 w-56">/v1/chat/completions</code>
+        <span class="text-[13px] text-slate-500">OpenAI-compatible chat. Pass <code class="ic">stream: true</code> to receive token-by-token SSE, or <code class="ic">stream: false</code> for a single JSON response.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MCP routes ────────────────────────────────────────────────────────── -->
+<section class="py-14 px-6 border-b border-slate-800 bg-surface" id="mcp">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-xl font-bold text-white mb-1 tracking-tight">MCP</h2>
+    <p class="text-sm text-slate-500 mb-6">Requires <code class="ic">X-Tenant-ID</code> header. Implements JSON-RPC 2.0 over HTTP.</p>
+    <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800 mb-8">
+      <div class="flex items-start gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors">
+        <span class="badge-post shrink-0 mt-0.5">POST</span>
+        <code class="font-mono text-[13px] text-slate-200 shrink-0 w-56">/mcp/message</code>
+        <span class="text-[13px] text-slate-500">MCP JSON-RPC endpoint. Pass <code class="ic">Accept: text/event-stream</code> to wrap the response as an SSE event (spec 2025-03-26).</span>
+      </div>
+      <div class="flex items-start gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors">
+        <span class="badge-get shrink-0 mt-0.5">GET</span>
+        <code class="font-mono text-[13px] text-slate-200 shrink-0 w-56">/mcp/sse</code>
+        <span class="text-[13px] text-slate-500">Legacy HTTP+SSE transport (spec 2024-11-05). Emits an <code class="ic">endpoint</code> event with the POST URL, then pings every 15 s.</span>
+      </div>
+    </div>
+
+    <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">Supported methods</p>
+    <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
+      <div class="flex items-start gap-4 px-5 py-3.5">
+        <code class="font-mono text-[13px] text-accent shrink-0 w-36">tools/list</code>
+        <span class="text-[13px] text-slate-500">Returns all tools for the tenant. Tenant tools first, then global tools (unless <code class="ic">include_global_tools</code> is <code class="ic">false</code> in tenant settings).</span>
+      </div>
+      <div class="flex items-start gap-4 px-5 py-3.5">
+        <code class="font-mono text-[13px] text-accent shrink-0 w-36">tools/call</code>
+        <span class="text-[13px] text-slate-500">Calls a named tool. Returns mock JSON from the matching tenant scenario, falling back to the global registry.</span>
+      </div>
+      <div class="flex items-start gap-4 px-5 py-3.5">
+        <code class="font-mono text-[13px] text-accent shrink-0 w-36">resources/list</code>
+        <span class="text-[13px] text-slate-500">Returns an empty resource list (stub).</span>
+      </div>
+      <div class="flex items-start gap-4 px-5 py-3.5">
+        <code class="font-mono text-[13px] text-accent shrink-0 w-36">prompts/list</code>
+        <span class="text-[13px] text-slate-500">Returns an empty prompt list (stub).</span>
+      </div>
+      <div class="flex items-start gap-4 px-5 py-3.5">
+        <code class="font-mono text-[13px] text-accent shrink-0 w-36">initialize</code>
+        <span class="text-[13px] text-slate-500">Returns server info and capability advertisement for the 2025-03-26 protocol version.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Admin routes ──────────────────────────────────────────────────────── -->
+<section class="py-14 px-6 border-b border-slate-800" id="admin">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-xl font-bold text-white mb-1 tracking-tight">Admin</h2>
+    <p class="text-sm text-slate-500 mb-8">Unauthenticated — local dev only. No <code class="ic">X-Tenant-ID</code> required.</p>
+
+    <div class="space-y-8">
+
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">Tenants</p>
+        <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-get  shrink-0 mt-0.5">GET</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants</code>
+            <span class="text-[13px] text-slate-500">List all tenant IDs.</span>
+          </div>
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-post shrink-0 mt-0.5">POST</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants</code>
+            <span class="text-[13px] text-slate-500">Create a tenant. Body: <code class="ic">{"tenant_id":"…","state":{}}</code></span>
+          </div>
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-get  shrink-0 mt-0.5">GET</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}</code>
+            <span class="text-[13px] text-slate-500">Get tenant state JSON.</span>
+          </div>
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-put  shrink-0 mt-0.5">PUT</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/state</code>
+            <span class="text-[13px] text-slate-500">Replace tenant state. Body: <code class="ic">{"state":{}}</code></span>
+          </div>
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-get  shrink-0 mt-0.5">GET</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/settings</code>
+            <span class="text-[13px] text-slate-500">Get tenant settings (e.g. <code class="ic">include_global_tools</code>).</span>
+          </div>
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-put  shrink-0 mt-0.5">PATCH</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/settings</code>
+            <span class="text-[13px] text-slate-500">Merge-patch tenant settings. Body: <code class="ic">{"include_global_tools":false}</code></span>
+          </div>
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-del  shrink-0 mt-0.5">DELETE</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}</code>
+            <span class="text-[13px] text-slate-500">Delete tenant and all its scenarios.</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">Scenarios</p>
+        <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-get  shrink-0 mt-0.5">GET</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/scenarios</code>
+            <span class="text-[13px] text-slate-500">List all scenarios for a tenant.</span>
+          </div>
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-post shrink-0 mt-0.5">POST</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/scenarios</code>
+            <span class="text-[13px] text-slate-500">Add a scenario. Body: <code class="ic">{"keywords":["…"],"response":"…","tool_name":"…","tool_data":{}}</code></span>
+          </div>
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-del  shrink-0 mt-0.5">DELETE</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/scenarios/{sid}</code>
+            <span class="text-[13px] text-slate-500">Delete a scenario by ID.</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">Chaos</p>
+        <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-get  shrink-0 mt-0.5">GET</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/chaos</code>
+            <span class="text-[13px] text-slate-500">Get current chaos profile.</span>
+          </div>
+          <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
+            <span class="badge-post shrink-0 mt-0.5">POST</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/chaos</code>
+            <span class="text-[13px] text-slate-500">Set profile: <code class="ic">none</code> <code class="ic">rate_limit</code> <code class="ic">server_error</code> <code class="ic">latency</code></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Live tenants ──────────────────────────────────────────────────────── -->
+<section class="py-14 px-6 bg-surface" id="tenants">
+  <div class="max-w-5xl mx-auto">
+    <div class="flex items-center justify-between gap-4 mb-2 flex-wrap">
+      <h2 class="text-xl font-bold text-white tracking-tight">Live tenants</h2>
+      <button onclick="loadTenants()"
+        class="cursor-pointer text-[13px] font-medium text-slate-300 border border-slate-700 rounded-full px-4 py-1.5 hover:bg-slate-800 hover:border-slate-600 transition-colors">
+        Refresh
+      </button>
+    </div>
+    <p class="text-sm text-slate-500 mb-8">Running on this server right now. Each tenant has its own mock state, scenarios, and MCP tools.</p>
+    <div id="tenant-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="col-span-full text-sm text-slate-500 py-6 px-5 border border-dashed border-slate-700 rounded-xl text-center">
+        Loading tenants…
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const QS_ON  = "qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-white bg-base border border-slate-700 border-b-[#0d1117] -mb-px rounded-t-md";
+  const QS_OFF = "qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md";
+
+  function showTab(name, btn) {
+    document.querySelectorAll(".qs-tab").forEach(t => { t.className = QS_OFF; });
+    btn.className = QS_ON;
+    document.querySelectorAll("[id^='qs-']").forEach(el => el.classList.add("hidden"));
+    document.getElementById("qs-" + name).classList.remove("hidden");
+  }
+
+  async function loadTenants() {
+    const grid = document.getElementById("tenant-grid");
+    grid.innerHTML = `<div class="col-span-full text-sm text-slate-500 py-6 px-5 border border-dashed border-slate-700 rounded-xl text-center">Loading tenants…</div>`;
+    try {
+      const data    = await fetch("/admin/tenants").then(r => r.json());
+      const tenants = data.tenants || [];
+      if (!tenants.length) {
+        grid.innerHTML = `<div class="col-span-full text-sm text-slate-500 py-6 px-5 border border-dashed border-slate-700 rounded-xl text-center">No tenants. Create one via <code class="ic">POST /admin/tenants</code>.</div>`;
+        return;
+      }
+      grid.innerHTML = tenants.map(t => `
+        <div class="bg-raised border border-slate-800 rounded-2xl p-5 flex flex-col gap-3.5 hover:border-accent/20 transition-colors">
+          <div class="flex items-center gap-2.5">
+            <div class="w-2.5 h-2.5 rounded-full bg-accent shrink-0" style="box-shadow:0 0 0 4px rgba(16,217,163,0.1)"></div>
+            <span class="font-mono text-[13px] font-semibold text-slate-200 break-all">${t}</span>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <a href="/admin/tenants/${t}" target="_blank"
+               class="text-[11.5px] font-medium text-slate-400 bg-base border border-slate-800 rounded-full px-3 py-1 hover:text-accent hover:border-accent/30 transition-colors">state ↗</a>
+            <a href="/admin/tenants/${t}/scenarios" target="_blank"
+               class="text-[11.5px] font-medium text-slate-400 bg-base border border-slate-800 rounded-full px-3 py-1 hover:text-accent hover:border-accent/30 transition-colors">scenarios ↗</a>
+            <a href="/admin/tenants/${t}/chaos" target="_blank"
+               class="text-[11.5px] font-medium text-slate-400 bg-base border border-slate-800 rounded-full px-3 py-1 hover:text-accent hover:border-accent/30 transition-colors">chaos ↗</a>
+          </div>
+          <a href="/playground?tenant=${encodeURIComponent(t)}"
+            class="mt-auto bg-accent/10 text-accent border border-accent/20 rounded-full py-2 text-[13px] font-semibold hover:bg-accent/20 transition-colors text-center">
+            Try in playground →
+          </a>
+        </div>
+      `).join("");
+    } catch (e) {
+      grid.innerHTML = `<div class="col-span-full text-sm text-red-400 py-6 px-5 border border-dashed border-red-800/40 rounded-xl text-center">Failed to load: ${e.message}</div>`;
+    }
+  }
+
+  loadTenants();
+</script>
+
+{{end}}
