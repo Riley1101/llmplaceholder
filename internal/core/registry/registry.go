@@ -81,8 +81,9 @@ func ListTools() []map[string]string {
 	return tools
 }
 
-// ListToolsForTenant merges tenant-specific tools with global tools
-func ListToolsForTenant(tenantScenarios []models.TenantScenario) []map[string]string {
+// ListToolsForTenant merges tenant-specific tools with global tools.
+// Set includeGlobal=false to return only tenant-defined tools.
+func ListToolsForTenant(tenantScenarios []models.TenantScenario, includeGlobal bool) []map[string]string {
 	seen := map[string]bool{}
 	var tools []map[string]string
 	for _, s := range tenantScenarios {
@@ -92,10 +93,12 @@ func ListToolsForTenant(tenantScenarios []models.TenantScenario) []map[string]st
 		seen[s.ToolName] = true
 		tools = append(tools, map[string]string{"name": s.ToolName, "source": "tenant"})
 	}
-	for _, t := range ListTools() {
-		if !seen[t["name"]] {
-			t["source"] = "global"
-			tools = append(tools, t)
+	if includeGlobal {
+		for _, t := range ListTools() {
+			if !seen[t["name"]] {
+				t["source"] = "global"
+				tools = append(tools, t)
+			}
 		}
 	}
 	return tools

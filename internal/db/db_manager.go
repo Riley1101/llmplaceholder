@@ -54,6 +54,9 @@ func NewTenantDBManager(dbPath string) (*TenantDBManager, error) {
 		return nil, err
 	}
 
+	// idempotent migration — ignored if column already exists
+	db.Exec(`ALTER TABLE tenant_state ADD COLUMN settings_json TEXT NOT NULL DEFAULT '{}'`)
+
 	return &TenantDBManager{db: db}, nil
 }
 
@@ -124,6 +127,25 @@ func (m *TenantDBManager) ListTenants() ([]string, error) {
 
 func (m *TenantDBManager) provisionTenant(tenantID string) error {
 	_, err := m.db.Exec("INSERT OR IGNORE INTO tenant_state (tenant_id, state_json) VALUES (?, '{}')", tenantID)
+	return err
+}
+
+// ── Tenant settings ───────────────────────────────────────────────────────────
+
+func (m *TenantDBManager) ReadSettings(tenantID string) (map[string]interface{}, error) {
+	var raw string
+	err := m.db.QueryRow("SELECT settings_json FROM tenant_state WHERE tenant_id = ?", tenantID).Scan(&raw)
+	if err != nil {
+		return map[string]interface{}{}, nil
+	}
+	var data map[string]interface{}
+	json.Unmarshal([]byte(raw), &data)
+	return data, nil
+}
+
+func (m *TenantDBManager) WriteSettings(tenantID string, settings map[string]interface{}) error {
+	b, _ := json.Marshal(settings)
+	_, err := m.db.Exec(`UPDATE tenant_state SET settings_json = ? WHERE tenant_id = ?`, string(b), tenantID)
 	return err
 }
 

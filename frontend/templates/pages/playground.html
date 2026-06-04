@@ -28,10 +28,19 @@
     <div class="flex flex-col gap-4 p-5 w-80 xl:w-96 shrink-0 border-r border-slate-800 overflow-y-auto">
       <div class="flex flex-col gap-1.5">
         <label class="label">Tenant</label>
-        <select id="pg-tenant"
+        <select id="pg-tenant" onchange="loadPgSettings()"
           class="cursor-pointer bg-raised border border-slate-700 text-slate-200 text-[13px] font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-accent/40">
           <option value="">Loading…</option>
         </select>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-[12px] font-medium text-slate-400">Include global MCP tools</span>
+        <button id="pg-global-toggle" onclick="togglePgGlobalTools()"
+          class="relative cursor-pointer w-9 h-[18px] rounded-full transition-colors bg-accent shrink-0"
+          aria-pressed="true">
+          <span id="pg-global-knob"
+            class="absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform translate-x-[18px]"></span>
+        </button>
       </div>
       <div class="flex flex-col gap-1.5">
         <label class="label">Protocol</label>
@@ -161,6 +170,20 @@
 
         <!-- Tools tab -->
         <div id="dtab-tools" class="hidden flex flex-col flex-1 min-h-0">
+          <!-- Global tools toggle -->
+          <div class="flex items-center justify-between px-5 py-3 border-b border-slate-800 shrink-0 bg-black/10">
+            <div>
+              <span class="text-[12.5px] font-semibold text-slate-300">Include global tools</span>
+              <span class="ml-2 text-[11px] text-slate-600">When off, tools/list only returns tenant-defined tools</span>
+            </div>
+            <button id="global-tools-toggle" onclick="toggleGlobalTools()"
+              class="relative cursor-pointer w-10 h-5 rounded-full transition-colors bg-accent shrink-0"
+              aria-pressed="true">
+              <span id="global-tools-knob"
+                class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform translate-x-5"></span>
+            </button>
+          </div>
+
           <!-- Create tool form -->
           <div class="p-5 border-b border-slate-800 shrink-0 flex flex-col gap-3">
             <div class="grid grid-cols-2 gap-3">
@@ -267,7 +290,7 @@
     if (!id) return;
     if (name === "state")     loadState(id);
     if (name === "scenarios") loadScenarios(id);
-    if (name === "tools")     loadTools(id);
+    if (name === "tools")     { loadToolSettings(id); loadTools(id); }
     if (name === "chaos")     loadChaos(id);
   }
 
@@ -372,6 +395,43 @@
   }
 
   // ── MCP Tools ──────────────────────────────────────────────────────────────
+  let globalToolsEnabled = true;
+
+  async function loadToolSettings(id) {
+    try {
+      const data = await fetch(`/admin/tenants/${encodeURIComponent(id)}/settings`).then(r => r.json());
+      const v = data.settings?.include_global_tools;
+      globalToolsEnabled = v === undefined ? true : Boolean(v);
+      renderToggle();
+    } catch (_) {}
+  }
+
+  function renderToggle() {
+    const btn  = document.getElementById("global-tools-toggle");
+    const knob = document.getElementById("global-tools-knob");
+    if (!btn) return;
+    btn.setAttribute("aria-pressed", String(globalToolsEnabled));
+    btn.className = `relative cursor-pointer w-10 h-5 rounded-full transition-colors shrink-0 ${globalToolsEnabled ? "bg-accent" : "bg-slate-700"}`;
+    knob.className = `absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${globalToolsEnabled ? "translate-x-5" : "translate-x-0"}`;
+  }
+
+  async function toggleGlobalTools() {
+    const id = selectedTenant;
+    globalToolsEnabled = !globalToolsEnabled;
+    renderToggle();
+    try {
+      await fetch(`/admin/tenants/${encodeURIComponent(id)}/settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ include_global_tools: globalToolsEnabled }),
+      });
+      loadTools(id); // refresh tool lists to reflect change
+    } catch (e) {
+      globalToolsEnabled = !globalToolsEnabled; // revert on error
+      renderToggle();
+    }
+  }
+
   async function loadTools(id) {
     const tenantList = document.getElementById("tenant-tool-list");
     const globalList = document.getElementById("global-tool-list");
@@ -623,6 +683,45 @@
     } finally { label.textContent = "Send Request"; }
   }
 
+  let pgGlobalTools = true;
+
+  async function loadPgSettings() {
+    const id = document.getElementById("pg-tenant").value;
+    if (!id) return;
+    try {
+      const data = await fetch(`/admin/tenants/${encodeURIComponent(id)}/settings`).then(r => r.json());
+      const v = data.settings?.include_global_tools;
+      pgGlobalTools = v === undefined ? true : Boolean(v);
+    } catch (_) {}
+    renderPgToggle();
+  }
+
+  function renderPgToggle() {
+    const btn  = document.getElementById("pg-global-toggle");
+    const knob = document.getElementById("pg-global-knob");
+    if (!btn) return;
+    btn.setAttribute("aria-pressed", String(pgGlobalTools));
+    btn.className = `relative cursor-pointer w-9 h-[18px] rounded-full transition-colors shrink-0 ${pgGlobalTools ? "bg-accent" : "bg-slate-700"}`;
+    knob.className = `absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${pgGlobalTools ? "translate-x-[18px]" : "translate-x-0"}`;
+  }
+
+  async function togglePgGlobalTools() {
+    const id = document.getElementById("pg-tenant").value;
+    if (!id) return;
+    pgGlobalTools = !pgGlobalTools;
+    renderPgToggle();
+    try {
+      await fetch(`/admin/tenants/${encodeURIComponent(id)}/settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ include_global_tools: pgGlobalTools }),
+      });
+    } catch (_) {
+      pgGlobalTools = !pgGlobalTools;
+      renderPgToggle();
+    }
+  }
+
   async function loadTenants() {
     const sel = document.getElementById("pg-tenant");
     try {
@@ -633,6 +732,7 @@
       if (preselect && tenants.includes(preselect)) sel.value = preselect;
       const active = sel.value || tenants[0] || "";
       if (active) document.getElementById("pg-body").value = makeOpenAIBody(active);
+      loadPgSettings();
     } catch (e) { sel.innerHTML = `<option value="">Failed to load</option>`; }
   }
 

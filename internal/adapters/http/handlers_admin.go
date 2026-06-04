@@ -200,6 +200,42 @@ func HandleDeleteScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
 	}
 }
 
+// ── Tenant settings ───────────────────────────────────────────────────────────
+
+// GET /admin/tenants/{id}/settings
+func HandleGetTenantSettings(dbManager *db.TenantDBManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tenantID := r.PathValue("id")
+		settings, err := dbManager.ReadSettings(tenantID)
+		if err != nil {
+			jsonErr(w, "failed to read settings", http.StatusInternalServerError)
+			return
+		}
+		jsonOK(w, map[string]interface{}{"tenant_id": tenantID, "settings": settings})
+	}
+}
+
+// PATCH /admin/tenants/{id}/settings  body: {"include_global_tools": false, ...}
+func HandlePatchTenantSettings(dbManager *db.TenantDBManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tenantID := r.PathValue("id")
+		var patch map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
+			jsonErr(w, "invalid JSON", http.StatusBadRequest)
+			return
+		}
+		existing, _ := dbManager.ReadSettings(tenantID)
+		for k, v := range patch {
+			existing[k] = v
+		}
+		if err := dbManager.WriteSettings(tenantID, existing); err != nil {
+			jsonErr(w, "failed to save settings", http.StatusInternalServerError)
+			return
+		}
+		jsonOK(w, map[string]interface{}{"tenant_id": tenantID, "settings": existing})
+	}
+}
+
 // ── Chaos ─────────────────────────────────────────────────────────────────────
 
 // POST /admin/chaos  (header-based)

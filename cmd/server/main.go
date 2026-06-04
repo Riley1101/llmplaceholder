@@ -61,6 +61,10 @@ func main() {
 	mux.HandleFunc("POST /admin/tenants/{id}/scenarios", adapter.HandleCreateScenario(dbManager))
 	mux.HandleFunc("DELETE /admin/tenants/{id}/scenarios/{sid}", adapter.HandleDeleteScenario(dbManager))
 
+	// ── Admin — settings ─────────────────────────────────────────────────────
+	mux.HandleFunc("GET /admin/tenants/{id}/settings", adapter.HandleGetTenantSettings(dbManager))
+	mux.HandleFunc("PATCH /admin/tenants/{id}/settings", adapter.HandlePatchTenantSettings(dbManager))
+
 	// ── Admin — chaos ─────────────────────────────────────────────────────────
 	mux.HandleFunc("GET /admin/tenants/{id}/chaos", adapter.HandleGetTenantChaos(chaosManager))
 	mux.HandleFunc("POST /admin/tenants/{id}/chaos", adapter.HandleSetTenantChaos(chaosManager))

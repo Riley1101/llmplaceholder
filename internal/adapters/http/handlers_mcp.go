@@ -56,8 +56,16 @@ func HandleMCPMessage(dbManager *db.TenantDBManager) http.HandlerFunc {
 			}
 
 		case "tools/list":
+			includeGlobal := true
+			if settings, err := dbManager.ReadSettings(tenantID); err == nil {
+				if v, ok := settings["include_global_tools"]; ok {
+					if b, ok := v.(bool); ok {
+						includeGlobal = b
+					}
+				}
+			}
 			resp.Result = map[string]interface{}{
-				"tools": registry.ListToolsForTenant(tenantScenarios),
+				"tools": registry.ListToolsForTenant(tenantScenarios, includeGlobal),
 			}
 
 		case "resources/list":
