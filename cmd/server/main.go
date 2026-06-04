@@ -45,10 +45,23 @@ func main() {
 		adapter.TenantMiddleware(adapter.HandleMCPMessage(dbManager)))
 	mux.HandleFunc("GET /mcp/sse",
 		adapter.TenantMiddleware(adapter.HandleMCPSSE(dbManager)))
-	mux.HandleFunc("GET /ui/tenants", adapter.HandleTenantSidebar(dbManager))
-	mux.HandleFunc("GET /ui/tenants/{id}", adapter.HandleTenantPanel(dbManager))
-	mux.HandleFunc("GET /ui/tenants/{id}/overview", adapter.HandleTenantOverview(dbManager))
-	mux.HandleFunc("GET /ui/tenants/{id}/mcp", adapter.HandleTenantMCP(dbManager))
+	// ── UI fragment endpoints (HTMX) ─────────────────────────────────────────
+	mux.HandleFunc("GET /ui/tenants",                                   adapter.HandleUIGetTenants(dbManager))
+	mux.HandleFunc("POST /ui/tenants",                                  adapter.HandleUICreateTenant(dbManager))
+	mux.HandleFunc("DELETE /ui/tenants/{id}",                           adapter.HandleUIDeleteTenant(dbManager))
+	mux.HandleFunc("GET /ui/tenants/{id}",                              adapter.HandleUIGetTenantDetail(dbManager))
+	mux.HandleFunc("GET /ui/tenants/{id}/state",                        adapter.HandleUIGetStateTab(dbManager))
+	mux.HandleFunc("PUT /ui/tenants/{id}/state",                        adapter.HandleUISaveState(dbManager))
+	mux.HandleFunc("GET /ui/tenants/{id}/scenarios",                    adapter.HandleUIGetScenariosTab(dbManager))
+	mux.HandleFunc("GET /ui/tenants/{id}/mock-scenarios",               adapter.HandleUIGetMockScenarios())
+	mux.HandleFunc("POST /ui/tenants/{id}/scenarios",                   adapter.HandleUICreateScenario(dbManager))
+	mux.HandleFunc("DELETE /ui/tenants/{id}/scenarios/{sid}",           adapter.HandleUIDeleteScenario(dbManager))
+	mux.HandleFunc("GET /ui/tenants/{id}/tools",                        adapter.HandleUIGetToolsTab(dbManager))
+	mux.HandleFunc("POST /ui/tenants/{id}/tools",                       adapter.HandleUICreateTool(dbManager))
+	mux.HandleFunc("DELETE /ui/tenants/{id}/tools/{sid}",               adapter.HandleUIDeleteTool(dbManager))
+	mux.HandleFunc("POST /ui/tenants/{id}/settings",                    adapter.HandleUIToggleSettings(dbManager))
+	mux.HandleFunc("GET /ui/tenants/{id}/chaos",                        adapter.HandleUIGetChaosTab(chaosManager))
+	mux.HandleFunc("POST /ui/tenants/{id}/chaos",                       adapter.HandleUISetChaos(chaosManager))
 
 	// ── Admin — tenant CRUD ───────────────────────────────────────────────────
 	mux.HandleFunc("GET /admin/tenants", adapter.HandleListTenants(dbManager))

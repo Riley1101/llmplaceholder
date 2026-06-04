@@ -5,11 +5,11 @@
 
   <!-- ── Tab strip ─────────────────────────────────────────────────────────── -->
   <div class="shrink-0 flex items-center gap-1 px-4 border-b border-slate-800">
-    <button onclick="showPanel('playground')" data-panel="playground"
+    <button type="button" onclick="showPanel('playground')" data-panel="playground"
       class="dash-tab active px-4 h-10 text-[13px] font-semibold transition-colors">
       Playground
     </button>
-    <button onclick="showPanel('tenants')" data-panel="tenants"
+    <button type="button" onclick="showPanel('tenants')" data-panel="tenants"
       class="dash-tab px-4 h-10 text-[13px] font-semibold transition-colors">
       Tenants
     </button>
@@ -21,15 +21,16 @@
     <div class="flex flex-col gap-4 p-5 w-80 xl:w-96 shrink-0 border-r border-slate-800 overflow-y-auto">
       <div class="flex flex-col gap-1.5">
         <label class="label">Tenant</label>
-        <select id="pg-tenant" onchange="loadPgSettings()"
+        <select id="pg-tenant" onchange="loadPgSettings();loadKeywords(this.value)"
           class="cursor-pointer bg-raised border border-slate-700 text-slate-200 text-[13px] font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-accent/40">
           <option value="">Loading…</option>
         </select>
       </div>
       <div class="flex items-center justify-between">
         <span class="text-[12px] font-medium text-slate-400">Include global MCP tools</span>
-        <button id="pg-global-toggle" onclick="togglePgGlobalTools()"
+        <button type="button" id="pg-global-toggle" onclick="togglePgGlobalTools()"
           class="relative cursor-pointer w-9 h-[18px] rounded-full transition-colors bg-accent shrink-0"
+          aria-label="Include global MCP tools"
           aria-pressed="true">
           <span id="pg-global-knob"
             class="absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform translate-x-[18px]"></span>
@@ -38,9 +39,9 @@
       <div class="flex flex-col gap-1.5">
         <label class="label">Protocol</label>
         <div class="flex gap-2">
-          <button id="proto-openai" onclick="setProtocol('openai',this)"
+          <button type="button" id="proto-openai" onclick="setProtocol('openai',this)"
             class="proto-btn cursor-pointer px-4 py-1.5 rounded-full text-[12.5px] font-semibold bg-accent/10 text-accent border border-accent/25 transition-colors">OpenAI</button>
-          <button id="proto-mcp" onclick="setProtocol('mcp',this)"
+          <button type="button" id="proto-mcp" onclick="setProtocol('mcp',this)"
             class="proto-btn cursor-pointer px-4 py-1.5 rounded-full text-[12.5px] font-semibold text-slate-400 border border-slate-700 hover:text-slate-200 hover:border-slate-600 transition-colors">MCP</button>
         </div>
       </div>
@@ -53,8 +54,8 @@
         <textarea id="pg-body" spellcheck="false"
           class="flex-1 min-h-[240px] bg-raised border border-slate-700 rounded-lg text-[12.5px] font-mono text-slate-300 leading-relaxed px-4 py-3 resize-none w-full focus:outline-none focus:border-accent/40"></textarea>
       </div>
-      <button onclick="sendRequest()"
-        class="cursor-pointer w-full bg-accent text-[#071a13] font-bold text-sm rounded-full py-2.5 hover:opacity-90 transition-opacity shrink-0">
+      <button type="button" onclick="sendRequest()"
+        class="cursor-pointer w-full bg-accent/20 text-accent font-bold text-sm rounded-full py-2.5 border border-accent/30 hover:bg-accent/30 transition-colors shrink-0">
         <span id="send-label">Send Request</span>
       </button>
     </div>
@@ -67,180 +68,48 @@
       <pre id="pg-output"
         class="flex-1 p-5 font-mono text-[12.5px] text-slate-400 leading-relaxed overflow-auto whitespace-pre-wrap break-words min-h-0">// Hit "Send Request" to see the response here.</pre>
     </div>
+
+    <!-- Keywords panel -->
+    <div class="flex flex-col w-52 xl:w-60 shrink-0 border-l border-slate-800 min-h-0">
+      <div class="px-4 py-3 border-b border-slate-800 shrink-0 bg-black/20">
+        <span class="label">Keywords</span>
+        <p class="text-[10.5px] text-slate-600 mt-0.5">Click to use as prompt</p>
+      </div>
+      <div id="keywords-list" class="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
+        <div class="text-[11px] text-slate-600 text-center py-4">Select a tenant</div>
+      </div>
+    </div>
   </div>
 
   <!-- ── Tenants panel ────────────────────────────────────────────────────── -->
   <div id="panel-tenants" class="hidden flex flex-1 min-h-0">
 
-    <!-- Sidebar: tenant list + create -->
+    <!-- Sidebar -->
     <div class="flex flex-col w-56 xl:w-64 shrink-0 border-r border-slate-800 min-h-0">
-      <!-- Create form -->
-      <div class="p-3 border-b border-slate-800">
+      <form class="p-3 border-b border-slate-800 shrink-0"
+        hx-post="/ui/tenants"
+        hx-target="#tenant-detail"
+        hx-swap="innerHTML"
+        hx-on::after-request="this.reset()">
         <div class="flex gap-2">
-          <input id="new-tenant-id" type="text" placeholder="new tenant id" spellcheck="false"
-            class="flex-1 min-w-0 bg-raised border border-slate-700 text-slate-200 text-[12px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-accent/40 placeholder:text-slate-600"
-            onkeydown="if(event.key==='Enter') createTenant()" />
-          <button onclick="createTenant()"
-            class="cursor-pointer shrink-0 bg-accent text-[#071a13] font-bold text-[12px] px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity">
-            +
-          </button>
+          <input name="tenant_id" type="text" placeholder="new tenant id" spellcheck="false"
+            class="flex-1 min-w-0 bg-raised border border-slate-700 text-slate-200 text-[12px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-accent/40 placeholder:text-slate-600" />
+          <button type="submit" aria-label="Add tenant"
+            class="cursor-pointer shrink-0 bg-accent/20 text-accent font-bold text-[12px] px-3 py-1.5 rounded-lg border border-accent/30 hover:bg-accent/30 transition-colors">+</button>
         </div>
-        <p id="create-msg" class="mt-1.5 text-[11px] hidden"></p>
-      </div>
-      <!-- List -->
-      <div id="tenant-sidebar-list" class="flex-1 overflow-y-auto py-1">
+      </form>
+      <div id="tenant-sidebar-list"
+           hx-get="/ui/tenants"
+           hx-trigger="load-tenants"
+           class="flex-1 overflow-y-auto py-1">
         <div class="text-[12px] text-slate-600 px-3 py-4 text-center">Loading…</div>
       </div>
     </div>
 
     <!-- Detail panel -->
     <div id="tenant-detail" class="flex flex-col flex-1 min-w-0 min-h-0">
-      <!-- Empty state -->
-      <div id="detail-empty" class="flex flex-1 items-center justify-center">
+      <div class="flex flex-1 items-center justify-center">
         <p class="text-sm text-slate-600">Select a tenant to manage it.</p>
-      </div>
-
-      <!-- Loaded state (hidden until tenant selected) -->
-      <div id="detail-content" class="hidden flex flex-col flex-1 min-h-0">
-        <!-- Tenant header -->
-        <div class="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-black/10 shrink-0">
-          <span id="detail-title" class="font-mono text-[13px] font-semibold text-slate-200"></span>
-          <button onclick="deleteTenant()"
-            class="cursor-pointer text-[12px] font-medium text-slate-600 hover:text-red-400 transition-colors">
-            Delete tenant
-          </button>
-        </div>
-        <!-- Sub-tabs -->
-        <div class="flex gap-0.5 px-4 pt-3 pb-0 border-b border-slate-800 shrink-0">
-          <button onclick="showDetailTab('state')" data-tab="state"
-            class="detail-tab active px-4 py-1.5 text-[12.5px] font-semibold rounded-t-md transition-colors">State</button>
-          <button onclick="showDetailTab('scenarios')" data-tab="scenarios"
-            class="detail-tab px-4 py-1.5 text-[12.5px] font-semibold rounded-t-md transition-colors">Scenarios</button>
-          <button onclick="showDetailTab('tools')" data-tab="tools"
-            class="detail-tab px-4 py-1.5 text-[12.5px] font-semibold rounded-t-md transition-colors">MCP Tools</button>
-          <button onclick="showDetailTab('chaos')" data-tab="chaos"
-            class="detail-tab px-4 py-1.5 text-[12.5px] font-semibold rounded-t-md transition-colors">Chaos</button>
-        </div>
-
-        <!-- State tab -->
-        <div id="dtab-state" class="flex flex-col flex-1 min-h-0 p-5 gap-3">
-          <textarea id="state-editor" spellcheck="false"
-            class="flex-1 min-h-0 bg-raised border border-slate-700 rounded-xl text-[12.5px] font-mono text-slate-300 leading-relaxed px-4 py-3 resize-none focus:outline-none focus:border-accent/40"></textarea>
-          <div class="flex items-center gap-3 shrink-0">
-            <button onclick="saveState()"
-              class="cursor-pointer bg-accent text-[#071a13] font-bold text-[13px] px-5 py-2 rounded-full hover:opacity-90 transition-opacity">
-              Save state
-            </button>
-            <span id="state-msg" class="text-[12px] hidden"></span>
-          </div>
-        </div>
-
-        <!-- Scenarios tab -->
-        <div id="dtab-scenarios" class="hidden flex flex-col flex-1 min-h-0">
-          <!-- Create scenario form -->
-          <div class="p-5 border-b border-slate-800 shrink-0 flex flex-col gap-3">
-            <div class="flex flex-col gap-1.5">
-              <label class="label">Keywords <span class="normal-case font-normal text-slate-600">(comma-separated)</span></label>
-              <input id="sc-keywords" type="text" placeholder="invoice, billing, payment"
-                class="bg-raised border border-slate-700 text-slate-200 text-[12.5px] font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-accent/40 placeholder:text-slate-600" />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="label">Response</label>
-              <textarea id="sc-response" rows="3" placeholder="The mock response text to stream back…"
-                class="bg-raised border border-slate-700 text-slate-300 text-[12.5px] rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-accent/40 placeholder:text-slate-600"></textarea>
-            </div>
-            <div class="flex items-center gap-3">
-              <button onclick="createScenario()"
-                class="cursor-pointer bg-accent text-[#071a13] font-bold text-[13px] px-5 py-2 rounded-full hover:opacity-90 transition-opacity">
-                Add scenario
-              </button>
-              <span id="sc-msg" class="text-[12px] hidden"></span>
-            </div>
-          </div>
-          <!-- Scenario list -->
-          <div id="scenario-list" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2"></div>
-        </div>
-
-        <!-- Tools tab -->
-        <div id="dtab-tools" class="hidden flex flex-col flex-1 min-h-0">
-          <!-- Global tools toggle -->
-          <div class="flex items-center justify-between px-5 py-3 border-b border-slate-800 shrink-0 bg-black/10">
-            <div>
-              <span class="text-[12.5px] font-semibold text-slate-300">Include global tools</span>
-              <span class="ml-2 text-[11px] text-slate-600">When off, tools/list only returns tenant-defined tools</span>
-            </div>
-            <button id="global-tools-toggle" onclick="toggleGlobalTools()"
-              class="relative cursor-pointer w-10 h-5 rounded-full transition-colors bg-accent shrink-0"
-              aria-pressed="true">
-              <span id="global-tools-knob"
-                class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform translate-x-5"></span>
-            </button>
-          </div>
-
-          <!-- Create tool form -->
-          <div class="p-5 border-b border-slate-800 shrink-0 flex flex-col gap-3">
-            <div class="grid grid-cols-2 gap-3">
-              <div class="flex flex-col gap-1.5">
-                <label class="label">Tool name <span class="normal-case font-normal text-slate-600">(required)</span></label>
-                <input id="tool-name" type="text" placeholder="get_invoice_ledger" spellcheck="false"
-                  class="bg-raised border border-slate-700 text-slate-200 text-[12.5px] font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-accent/40 placeholder:text-slate-600" />
-              </div>
-              <div class="flex flex-col gap-1.5">
-                <label class="label">Keywords <span class="normal-case font-normal text-slate-600">(comma-separated)</span></label>
-                <input id="tool-keywords" type="text" placeholder="invoice, billing"
-                  class="bg-raised border border-slate-700 text-slate-200 text-[12.5px] font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-accent/40 placeholder:text-slate-600" />
-              </div>
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="label">Mock text response</label>
-              <textarea id="tool-response" rows="2" placeholder="The text response to stream when this tool is called…"
-                class="bg-raised border border-slate-700 text-slate-300 text-[12.5px] rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-accent/40 placeholder:text-slate-600"></textarea>
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="label">Tool data <span class="normal-case font-normal text-slate-600">(JSON — returned in tools/call content)</span></label>
-              <textarea id="tool-data" rows="3" placeholder='{"status": "success", "data": []}'
-                class="bg-raised border border-slate-700 text-slate-300 text-[12.5px] font-mono rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-accent/40 placeholder:text-slate-600"></textarea>
-            </div>
-            <div class="flex items-center gap-3">
-              <button onclick="createTool()"
-                class="cursor-pointer bg-accent text-[#071a13] font-bold text-[13px] px-5 py-2 rounded-full hover:opacity-90 transition-opacity">
-                Add tool
-              </button>
-              <span id="tool-msg" class="text-[12px] hidden"></span>
-            </div>
-          </div>
-          <!-- Tool list -->
-          <div class="flex-1 overflow-y-auto">
-            <!-- Tenant tools -->
-            <div class="px-4 pt-4 pb-2">
-              <p class="label mb-2">Tenant tools</p>
-              <div id="tenant-tool-list" class="flex flex-col gap-2">
-                <div class="text-[12px] text-slate-600 text-center py-3">Loading…</div>
-              </div>
-            </div>
-            <!-- Global tools (read-only reference) -->
-            <div class="px-4 pt-4 pb-4">
-              <p class="label mb-2">Global tools <span class="normal-case font-normal text-slate-600">(built-in, read-only)</span></p>
-              <div id="global-tool-list" class="flex flex-wrap gap-1.5">
-                <div class="text-[12px] text-slate-600">Loading…</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Chaos tab -->
-        <div id="dtab-chaos" class="hidden p-5 flex flex-col gap-5">
-          <div>
-            <p class="label mb-3">Fault profile</p>
-            <div class="flex flex-wrap gap-2" id="chaos-btns">
-              <button onclick="setChaos('none')"        data-chaos="none"         class="chaos-btn cursor-pointer px-4 py-2 rounded-full text-[13px] font-semibold border transition-colors">none</button>
-              <button onclick="setChaos('rate_limit')"  data-chaos="rate_limit"   class="chaos-btn cursor-pointer px-4 py-2 rounded-full text-[13px] font-semibold border transition-colors">rate_limit</button>
-              <button onclick="setChaos('server_error')" data-chaos="server_error" class="chaos-btn cursor-pointer px-4 py-2 rounded-full text-[13px] font-semibold border transition-colors">server_error</button>
-              <button onclick="setChaos('latency')"     data-chaos="latency"      class="chaos-btn cursor-pointer px-4 py-2 rounded-full text-[13px] font-semibold border transition-colors">latency</button>
-            </div>
-          </div>
-          <span id="chaos-msg" class="text-[12px] hidden"></span>
-        </div>
       </div>
     </div>
   </div>
@@ -251,295 +120,91 @@
   .label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgb(100 116 139); }
   .dash-tab { color:rgb(100 116 139); border-bottom:2px solid transparent; margin-bottom:-1px; }
   .dash-tab:hover { color:white; }
-  .dash-tab.active { color:white; border-bottom-color:rgb(16 217 163); }
+  .dash-tab.active { color:white; border-bottom-color:var(--accent); }
   .detail-tab { color:rgb(100 116 139); }
   .detail-tab:hover { color:white; }
-  .detail-tab.active { color:white; border-bottom:2px solid rgb(16 217 163); }
+  .detail-tab.active { color:white; border-bottom:2px solid var(--accent); }
   .tenant-item { display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12.5px; font-family:monospace; color:rgb(148 163 184); transition:background .1s,color .1s; }
-  .tenant-item:hover { background:rgb(30 35 51); color:white; }
-  .tenant-item.active { background:rgb(30 35 51); color:white; }
+  .tenant-item:hover { background:rgb(var(--color-surface)); color:white; }
+  .tenant-item.active { background:rgb(var(--color-surface)); color:white; }
   .chaos-btn { color:rgb(148 163 184); border-color:rgb(51 65 85); }
   .chaos-btn:hover { color:white; border-color:rgb(71 85 105); }
-  .chaos-btn.active { color:rgb(16 217 163); background:rgba(16,217,163,.1); border-color:rgba(16,217,163,.3); }
+  .chaos-btn.active { color:var(--accent); background:var(--accent-10); border-color:var(--accent-30); }
+  .badge-post { color: var(--pink); background: var(--pink-10); border-color: var(--pink-30); }
 </style>
 
 <script>
-  // ── Panel switching ────────────────────────────────────────────────────────
+  // ── Panel / tab helpers (HTMX drives the content; these manage active classes)
   function showPanel(name) {
     document.querySelectorAll("[id^='panel-']").forEach(el => el.classList.add("hidden"));
     document.getElementById("panel-" + name).classList.remove("hidden");
     document.querySelectorAll(".dash-tab").forEach(b => b.classList.remove("active"));
     document.querySelector(`[data-panel="${name}"]`).classList.add("active");
-    if (name === "tenants") loadTenantSidebar();
+    if (name === "tenants") htmx.trigger(document.getElementById("tenant-sidebar-list"), "load-tenants");
   }
 
-  // ── Detail sub-tab switching ───────────────────────────────────────────────
-  function showDetailTab(name) {
-    document.querySelectorAll("[id^='dtab-']").forEach(el => el.classList.add("hidden"));
-    document.getElementById("dtab-" + name).classList.remove("hidden");
+  function setDetailTab(btn) {
     document.querySelectorAll(".detail-tab").forEach(b => b.classList.remove("active"));
-    document.querySelector(`[data-tab="${name}"]`).classList.add("active");
-    const id = selectedTenant;
-    if (!id) return;
-    if (name === "state")     loadState(id);
-    if (name === "scenarios") loadScenarios(id);
-    if (name === "tools")     { loadToolSettings(id); loadTools(id); }
-    if (name === "chaos")     loadChaos(id);
+    btn.classList.add("active");
   }
 
-  // ── State ──────────────────────────────────────────────────────────────────
-  let selectedTenant = "";
-
-  function selectTenant(id) {
-    selectedTenant = id;
-    document.getElementById("detail-empty").classList.add("hidden");
-    document.getElementById("detail-content").classList.remove("hidden");
-    document.getElementById("detail-title").textContent = id;
-
-    document.querySelectorAll(".tenant-item").forEach(el => el.classList.remove("active"));
-    const el = document.querySelector(`[data-tid="${CSS.escape(id)}"]`);
-    if (el) el.classList.add("active");
-
-    // show first tab
-    const activeTab = document.querySelector(".detail-tab.active")?.dataset.tab || "state";
-    showDetailTab(activeTab);
+  function setActiveTenant(el) {
+    document.querySelectorAll(".tenant-item").forEach(i => i.classList.remove("active"));
+    el.classList.add("active");
   }
 
-  async function loadState(id) {
-    const ed = document.getElementById("state-editor");
-    ed.value = "Loading…";
+  // ── Keywords panel ─────────────────────────────────────────────────────────
+  async function loadKeywords(id) {
+    const list = document.getElementById("keywords-list");
+    if (!id) {
+      list.innerHTML = `<div class="text-[11px] text-slate-600 text-center py-4">Select a tenant</div>`;
+      return;
+    }
+    list.innerHTML = `<div class="text-[11px] text-slate-600 text-center py-4">Loading…</div>`;
     try {
-      const data = await fetch(`/admin/tenants/${encodeURIComponent(id)}`).then(r => r.json());
-      ed.value = JSON.stringify(data.state ?? {}, null, 2);
-    } catch (e) { ed.value = "Error: " + e.message; }
-  }
+      const data      = await fetch(`/admin/tenants/${encodeURIComponent(id)}/scenarios`).then(r => r.json());
+      const scenarios = (data.scenarios || []).filter(s => s.keywords?.length);
+      const parts     = [];
 
-  async function saveState() {
-    const id  = selectedTenant;
-    const msg = document.getElementById("state-msg");
-    let parsed;
-    try { parsed = JSON.parse(document.getElementById("state-editor").value); }
-    catch (e) { showMsg(msg, "✗ Invalid JSON: " + e.message, "red"); return; }
-    try {
-      const res = await fetch(`/admin/tenants/${encodeURIComponent(id)}/state`, {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state: parsed }),
-      });
-      res.ok ? showMsg(msg, "✓ Saved", "green") : showMsg(msg, "✗ " + (await res.json()).error, "red");
-    } catch (e) { showMsg(msg, "✗ " + e.message, "red"); }
-  }
-
-  // ── Scenarios ──────────────────────────────────────────────────────────────
-  async function loadScenarios(id) {
-    const list = document.getElementById("scenario-list");
-    list.innerHTML = `<div class="text-[12px] text-slate-600 text-center py-4">Loading…</div>`;
-    try {
-      const data = await fetch(`/admin/tenants/${encodeURIComponent(id)}/scenarios`).then(r => r.json());
-      const scenarios = data.scenarios || [];
-      if (!scenarios.length) {
-        list.innerHTML = `<div class="text-[12px] text-slate-600 text-center py-6">No scenarios yet.</div>`;
-        return;
+      for (const s of scenarios) {
+        const label = s.response ? s.response.slice(0, 48) + (s.response.length > 48 ? "…" : "")
+                                 : (s.tool_name || "Scenario");
+        const chips = s.keywords.map(k =>
+          `<button type="button" onclick="useKeyword(${JSON.stringify(k)})" aria-label="Use keyword: ${k}"
+            class="cursor-pointer text-[11px] font-mono bg-raised border border-slate-700 hover:border-accent/40 hover:text-accent text-slate-400 rounded px-2 py-0.5 transition-colors text-left">${k}</button>`
+        ).join("");
+        parts.push(`<div class="flex flex-col gap-1.5">
+          <p class="text-[10.5px] text-slate-600 leading-snug">${label}</p>
+          <div class="flex flex-wrap gap-1">${chips}</div>
+        </div>`);
       }
-      list.innerHTML = scenarios.map(s => `
-        <div class="flex items-start gap-3 px-4 py-3 bg-raised border border-slate-800 rounded-xl group">
-          <div class="flex-1 min-w-0">
-            <div class="flex flex-wrap gap-1 mb-1.5">
-              ${(s.keywords || []).map(k => `<span class="text-[10.5px] font-mono bg-accent/10 text-accent border border-accent/20 rounded px-1.5 py-0.5">${k}</span>`).join("")}
-            </div>
-            <p class="text-[12px] text-slate-500 truncate">${s.response || ""}</p>
-          </div>
-          <button onclick="deleteScenario('${s.id}')"
-            class="cursor-pointer text-[12px] text-slate-600 hover:text-red-400 transition-colors shrink-0 mt-0.5">✕</button>
-        </div>
-      `).join("");
+
+      const hint = getHint(id);
+      if (hint !== "Hello! What can you help me with?") {
+        parts.push(`<div class="flex flex-col gap-1.5">
+          <p class="text-[10.5px] text-slate-600">Domain sample</p>
+          <button type="button" onclick="useKeyword(${JSON.stringify(hint)})"
+            class="cursor-pointer text-left text-[11px] text-slate-400 hover:text-accent bg-raised border border-slate-700 hover:border-accent/40 rounded-lg px-2.5 py-2 transition-colors leading-relaxed">${hint}</button>
+        </div>`);
+      }
+
+      list.innerHTML = parts.length
+        ? parts.join(`<div class="border-t border-slate-800/50"></div>`)
+        : `<div class="text-[11px] text-slate-600 text-center py-4">No scenarios yet.<br>Add some in the Tenants tab.</div>`;
     } catch (e) {
-      list.innerHTML = `<div class="text-[12px] text-red-400 text-center py-4">${e.message}</div>`;
+      list.innerHTML = `<div class="text-[11px] text-red-400 text-center py-4">${e.message}</div>`;
     }
   }
 
-  async function createScenario() {
-    const id  = selectedTenant;
-    const msg = document.getElementById("sc-msg");
-    const keywords = document.getElementById("sc-keywords").value.split(",").map(k => k.trim()).filter(Boolean);
-    const response = document.getElementById("sc-response").value.trim();
-    if (!keywords.length || !response) { showMsg(msg, "✗ Keywords and response required", "red"); return; }
+  function useKeyword(kw) {
+    const bodyEl = document.getElementById("pg-body");
     try {
-      const res = await fetch(`/admin/tenants/${encodeURIComponent(id)}/scenarios`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keywords, response }),
-      });
-      if (res.ok) {
-        showMsg(msg, "✓ Added", "green");
-        document.getElementById("sc-keywords").value = "";
-        document.getElementById("sc-response").value = "";
-        loadScenarios(id);
-      } else {
-        showMsg(msg, "✗ " + (await res.json()).error, "red");
-      }
-    } catch (e) { showMsg(msg, "✗ " + e.message, "red"); }
-  }
-
-  async function deleteScenario(sid) {
-    const id = selectedTenant;
-    try {
-      const res = await fetch(`/admin/tenants/${encodeURIComponent(id)}/scenarios/${encodeURIComponent(sid)}`, { method: "DELETE" });
-      if (res.ok) loadScenarios(id);
-    } catch (e) { alert(e.message); }
-  }
-
-  // ── MCP Tools ──────────────────────────────────────────────────────────────
-  let globalToolsEnabled = true;
-
-  async function loadToolSettings(id) {
-    try {
-      const data = await fetch(`/admin/tenants/${encodeURIComponent(id)}/settings`).then(r => r.json());
-      const v = data.settings?.include_global_tools;
-      globalToolsEnabled = v === undefined ? true : Boolean(v);
-      renderToggle();
-    } catch (_) {}
-  }
-
-  function renderToggle() {
-    const btn  = document.getElementById("global-tools-toggle");
-    const knob = document.getElementById("global-tools-knob");
-    if (!btn) return;
-    btn.setAttribute("aria-pressed", String(globalToolsEnabled));
-    btn.className = `relative cursor-pointer w-10 h-5 rounded-full transition-colors shrink-0 ${globalToolsEnabled ? "bg-accent" : "bg-slate-700"}`;
-    knob.className = `absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${globalToolsEnabled ? "translate-x-5" : "translate-x-0"}`;
-  }
-
-  async function toggleGlobalTools() {
-    const id = selectedTenant;
-    globalToolsEnabled = !globalToolsEnabled;
-    renderToggle();
-    try {
-      await fetch(`/admin/tenants/${encodeURIComponent(id)}/settings`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ include_global_tools: globalToolsEnabled }),
-      });
-      loadTools(id); // refresh tool lists to reflect change
-    } catch (e) {
-      globalToolsEnabled = !globalToolsEnabled; // revert on error
-      renderToggle();
-    }
-  }
-
-  async function loadTools(id) {
-    const tenantList = document.getElementById("tenant-tool-list");
-    const globalList = document.getElementById("global-tool-list");
-
-    // Tenant tools: scenarios with tool_name set
-    try {
-      const data = await fetch(`/admin/tenants/${encodeURIComponent(id)}/scenarios`).then(r => r.json());
-      const tools = (data.scenarios || []).filter(s => s.tool_name);
-      if (!tools.length) {
-        tenantList.innerHTML = `<div class="text-[12px] text-slate-600 text-center py-3">No tenant tools yet.</div>`;
-      } else {
-        tenantList.innerHTML = tools.map(t => `
-          <div class="flex items-start gap-3 px-4 py-3 bg-raised border border-slate-800 rounded-xl">
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-mono text-[12.5px] font-semibold text-accent">${t.tool_name}</span>
-                ${(t.keywords||[]).length ? `<span class="text-[10.5px] text-slate-600">${t.keywords.join(", ")}</span>` : ""}
-              </div>
-              ${t.response ? `<p class="text-[11.5px] text-slate-500 truncate mb-1">${t.response}</p>` : ""}
-              ${t.tool_data ? `<code class="text-[10.5px] text-slate-600 font-mono">${JSON.stringify(t.tool_data).slice(0,80)}…</code>` : ""}
-            </div>
-            <button onclick="deleteTool('${t.id}')"
-              class="cursor-pointer text-[12px] text-slate-600 hover:text-red-400 transition-colors shrink-0 mt-0.5">✕</button>
-          </div>
-        `).join("");
-      }
-    } catch (e) {
-      tenantList.innerHTML = `<div class="text-[12px] text-red-400 text-center py-3">${e.message}</div>`;
-    }
-
-    // Global tools: from tools/list via MCP
-    try {
-      const res  = await fetch("/mcp/message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Tenant-ID": id },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
-      });
-      const data  = await res.json();
-      const globals = (data.result?.tools || []).filter(t => t.source === "global");
-      globalList.innerHTML = globals.map(t =>
-        `<span class="text-[11px] font-mono text-slate-500 bg-raised border border-slate-800 rounded-full px-2.5 py-0.5">${t.name}</span>`
-      ).join("") || `<span class="text-[12px] text-slate-600">None</span>`;
+      const body = JSON.parse(bodyEl.value);
+      if (body.messages?.length) body.messages[body.messages.length - 1].content = kw;
+      bodyEl.value = JSON.stringify(body, null, 2);
     } catch (_) {
-      globalList.innerHTML = `<span class="text-[12px] text-slate-600">Unavailable</span>`;
+      bodyEl.value = JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content: kw }], stream: true }, null, 2);
     }
-  }
-
-  async function createTool() {
-    const id       = selectedTenant;
-    const msg      = document.getElementById("tool-msg");
-    const toolName = document.getElementById("tool-name").value.trim();
-    const keywords = document.getElementById("tool-keywords").value.split(",").map(k => k.trim()).filter(Boolean);
-    const response = document.getElementById("tool-response").value.trim();
-    const rawData  = document.getElementById("tool-data").value.trim();
-
-    if (!toolName) { showMsg(msg, "✗ Tool name required", "red"); return; }
-
-    let toolData = null;
-    if (rawData) {
-      try { toolData = JSON.parse(rawData); }
-      catch (e) { showMsg(msg, "✗ Invalid tool data JSON: " + e.message, "red"); return; }
-    }
-
-    try {
-      const res = await fetch(`/admin/tenants/${encodeURIComponent(id)}/scenarios`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keywords, response: response || toolName, tool_name: toolName, tool_data: toolData }),
-      });
-      if (res.ok) {
-        showMsg(msg, "✓ Tool added", "green");
-        document.getElementById("tool-name").value = "";
-        document.getElementById("tool-keywords").value = "";
-        document.getElementById("tool-response").value = "";
-        document.getElementById("tool-data").value = "";
-        loadTools(id);
-      } else {
-        showMsg(msg, "✗ " + (await res.json()).error, "red");
-      }
-    } catch (e) { showMsg(msg, "✗ " + e.message, "red"); }
-  }
-
-  async function deleteTool(sid) {
-    const id = selectedTenant;
-    try {
-      const res = await fetch(`/admin/tenants/${encodeURIComponent(id)}/scenarios/${encodeURIComponent(sid)}`, { method: "DELETE" });
-      if (res.ok) loadTools(id);
-    } catch (e) { alert(e.message); }
-  }
-
-  // ── Chaos ──────────────────────────────────────────────────────────────────
-  async function loadChaos(id) {
-    try {
-      const data = await fetch(`/admin/tenants/${encodeURIComponent(id)}/chaos`).then(r => r.json());
-      highlightChaos(data.profile || "none");
-    } catch (_) {}
-  }
-
-  function highlightChaos(profile) {
-    document.querySelectorAll(".chaos-btn").forEach(b => {
-      b.classList.toggle("active", b.dataset.chaos === profile);
-    });
-  }
-
-  async function setChaos(profile) {
-    const id  = selectedTenant;
-    const msg = document.getElementById("chaos-msg");
-    try {
-      const res = await fetch(`/admin/tenants/${encodeURIComponent(id)}/chaos`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile }),
-      });
-      if (res.ok) { highlightChaos(profile); showMsg(msg, `✓ Profile set to "${profile}"`, "green"); }
-      else showMsg(msg, "✗ " + (await res.json()).error, "red");
-    } catch (e) { showMsg(msg, "✗ " + e.message, "red"); }
   }
 
   // ── Tenant sidebar ─────────────────────────────────────────────────────────
@@ -726,15 +391,8 @@
       const active = sel.value || tenants[0] || "";
       if (active) document.getElementById("pg-body").value = makeOpenAIBody(active);
       loadPgSettings();
+      loadKeywords(sel.value);
     } catch (e) { sel.innerHTML = `<option value="">Failed to load</option>`; }
-  }
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
-  function showMsg(el, text, color) {
-    el.textContent = text;
-    el.className = `text-[12px] ${color === "green" ? "text-emerald-400" : "text-red-400"}`;
-    el.classList.remove("hidden");
-    setTimeout(() => el.classList.add("hidden"), 4000);
   }
 
   // ── Boot ───────────────────────────────────────────────────────────────────

@@ -17,13 +17,13 @@
 
     <div class="bg-surface border border-slate-800 rounded-2xl overflow-hidden max-w-2xl">
       <div class="flex px-3 pt-2.5 border-b border-slate-800 gap-0.5">
-        <button id="tab-curl"   onclick="showTab('curl',this)"
+        <button type="button" id="tab-curl"   onclick="showTab('curl',this)"
           class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-white bg-base border border-slate-700 border-b-[#0d1117] -mb-px rounded-t-md">curl</button>
-        <button id="tab-js"     onclick="showTab('js',this)"
+        <button type="button" id="tab-js"     onclick="showTab('js',this)"
           class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">JavaScript</button>
-        <button id="tab-python" onclick="showTab('python',this)"
+        <button type="button" id="tab-python" onclick="showTab('python',this)"
           class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">Python</button>
-        <button id="tab-mcp"    onclick="showTab('mcp',this)"
+        <button type="button" id="tab-mcp"    onclick="showTab('mcp',this)"
           class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">MCP</button>
       </div>
       <div class="bg-base">
@@ -141,6 +141,78 @@ curl -N http://localhost:8080/mcp/sse \
         <span class="text-[13px] text-slate-500">Returns server info and capability advertisement for the 2025-03-26 protocol version.</span>
       </div>
     </div>
+    <div class="mt-10">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">State override</p>
+      <p class="text-[13px] text-slate-500 mb-5 max-w-[60ch]">
+        Each tenant has a JSON state store. When <code class="ic">tools/call</code> matches a built-in scenario,
+        it checks whether <code class="ic">state[scenario.state_key]</code> exists — if so, that value replaces
+        the default mock payload. Lets you inject custom data per-tenant without writing new scenarios.
+      </p>
+
+      <div class="bg-surface border border-slate-800 rounded-2xl overflow-hidden max-w-2xl">
+        <div class="flex px-3 pt-2.5 border-b border-slate-800 gap-0.5">
+          <button type="button" id="mcp-tab-list"   onclick="showMcpTab('list',this)"
+            class="mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-white bg-base border border-slate-700 -mb-px rounded-t-md">1. list tools</button>
+          <button type="button" id="mcp-tab-call"   onclick="showMcpTab('call',this)"
+            class="mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">2. call (default)</button>
+          <button type="button" id="mcp-tab-state"  onclick="showMcpTab('state',this)"
+            class="mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">3. set state</button>
+          <button type="button" id="mcp-tab-override" onclick="showMcpTab('override',this)"
+            class="mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">4. call (override)</button>
+        </div>
+        <div class="bg-base">
+          <pre id="mcp-qs-list" class="p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">curl -s -X POST http://localhost:8080/mcp/message \
+  -H "X-Tenant-ID: saas-demo" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+
+# Returns all tools available to this tenant.
+# Built-in: get_growth_metrics, get_churn_report, … (saas domain)
+# Plus any tools you added in the Playground → Tenants → MCP Tools tab.</pre>
+          <pre id="mcp-qs-call" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">curl -s -X POST http://localhost:8080/mcp/message \
+  -H "X-Tenant-ID: saas-demo" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call",
+       "params":{"name":"get_growth_metrics"}}'
+
+# Returns the built-in mock payload:
+# { "mrr_usd": 128400, "churn_rate_pct": 2.1, "nrr_pct": 118 }</pre>
+          <pre id="mcp-qs-state" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre"># Write custom data under the scenario's state_key ("growth_metrics")
+curl -s -X PUT http://localhost:8080/admin/tenants/saas-demo/state \
+  -H "Content-Type: application/json" \
+  -d '{
+    "state": {
+      "growth_metrics": {
+        "mrr_usd": 999,
+        "churn_rate_pct": 0.1,
+        "nrr_pct": 150
+      }
+    }
+  }'
+
+# Or set it visually: Playground → Tenants → State tab → Save state</pre>
+          <pre id="mcp-qs-override" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre"># Same call as step 2 — now returns YOUR data
+curl -s -X POST http://localhost:8080/mcp/message \
+  -H "X-Tenant-ID: saas-demo" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call",
+       "params":{"name":"get_growth_metrics"}}'
+
+# Returns your overridden payload:
+# { "mrr_usd": 999, "churn_rate_pct": 0.1, "nrr_pct": 150 }
+
+# To reset: PUT state back to {} or remove the key.</pre>
+        </div>
+      </div>
+
+      <p class="text-[12px] text-slate-600 mt-4 max-w-[60ch]">
+        State keys per built-in scenario: <code class="ic">growth_metrics</code> <code class="ic">top_churned_accounts</code>
+        <code class="ic">incidents</code> <code class="ic">deployments</code> <code class="ic">inventory</code>
+        <code class="ic">security_events</code> <code class="ic">matters</code> and more —
+        visible in the Scenarios tab under each built-in entry.
+      </p>
+    </div>
+
   </div>
 </section>
 
@@ -256,12 +328,21 @@ curl -N http://localhost:8080/mcp/sse \
 <script>
   const QS_ON  = "qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-white bg-base border border-slate-700 border-b-[#0d1117] -mb-px rounded-t-md";
   const QS_OFF = "qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md";
+  const MCP_ON  = "mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-white bg-base border border-slate-700 -mb-px rounded-t-md";
+  const MCP_OFF = "mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md";
 
   function showTab(name, btn) {
     document.querySelectorAll(".qs-tab").forEach(t => { t.className = QS_OFF; });
     btn.className = QS_ON;
     document.querySelectorAll("[id^='qs-']").forEach(el => el.classList.add("hidden"));
     document.getElementById("qs-" + name).classList.remove("hidden");
+  }
+
+  function showMcpTab(name, btn) {
+    document.querySelectorAll(".mcp-tab").forEach(t => { t.className = MCP_OFF; });
+    btn.className = MCP_ON;
+    document.querySelectorAll("[id^='mcp-qs-']").forEach(el => el.classList.add("hidden"));
+    document.getElementById("mcp-qs-" + name).classList.remove("hidden");
   }
 
   async function loadTenants() {

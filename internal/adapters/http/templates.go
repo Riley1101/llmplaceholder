@@ -22,6 +22,7 @@ func LoadTemplates(dir string) error {
 			}
 			return ""
 		},
+		"add1": func(i int) int { return i + 1 },
 	}
 
 	// base = layout + partials; cloned for each page
@@ -56,12 +57,17 @@ func LoadTemplates(dir string) error {
 	return nil
 }
 
+func noCache(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-store")
+}
+
 func render(w http.ResponseWriter, page string, data any) {
 	t, ok := pages[page]
 	if !ok {
 		http.Error(w, "template not found: "+page, http.StatusInternalServerError)
 		return
 	}
+	noCache(w)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := t.ExecuteTemplate(w, "layout", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -69,6 +75,7 @@ func render(w http.ResponseWriter, page string, data any) {
 }
 
 func renderPartial(w http.ResponseWriter, name string, data any) {
+	noCache(w)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := partials.ExecuteTemplate(w, name, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

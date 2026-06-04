@@ -1,21 +1,22 @@
 {{define "tenant-sidebar"}}
 {{if .Tenants}}
-<div class="tenant-count">{{len .Tenants}} tenants</div>
-<div class="tenant-list">
   {{range .Tenants}}
-  <button type="button" class="tenant-chip"
-    hx-get="/ui/tenants/{{. | pathEscape}}/overview"
-    hx-target="#tenant-detail"
-    hx-swap="innerHTML">
-    <span class="dot"></span>
-    <span>{{.}}</span>
-  </button>
+  <div class="tenant-item" data-tid="{{.}}"
+       hx-get="/ui/tenants/{{. | pathEscape}}"
+       hx-target="#tenant-detail"
+       hx-swap="innerHTML"
+       onclick="setActiveTenant(this)">
+    <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span>
+    <span class="truncate">{{.}}</span>
+  </div>
   {{end}}
-</div>
 {{else}}
-<div class="empty-state">
-  <h3>No tenants yet</h3>
-  <p>Create a tenant through the admin API and this panel will refresh automatically.</p>
-</div>
+<div class="text-[12px] text-slate-600 px-3 py-4 text-center">No tenants.</div>
 {{end}}
+{{end}}
+
+{{define "tenant-detail-empty"}}
+<div class="flex flex-1 items-center justify-center h-full">
+  <p class="text-sm text-slate-600">Select a tenant to manage it.</p>
+</div>
 {{end}}
