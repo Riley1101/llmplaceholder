@@ -13,6 +13,10 @@
       class="dash-tab px-4 h-10 text-[13px] font-semibold transition-colors">
       Tenants
     </button>
+    <button type="button" onclick="showPanel('global-scenarios')" data-panel="global-scenarios"
+      class="dash-tab px-4 h-10 text-[13px] font-semibold transition-colors">
+      Global Scenarios
+    </button>
   </div>
 
   <!-- ── Playground panel ─────────────────────────────────────────────────── -->
@@ -41,6 +45,8 @@
         <div class="flex gap-2">
           <button type="button" id="proto-openai" onclick="setProtocol('openai',this)"
             class="proto-btn cursor-pointer px-4 py-1.5 rounded-full text-[12.5px] font-semibold bg-accent/10 text-accent border border-accent/25 transition-colors">OpenAI</button>
+          <button type="button" id="proto-anthropic" onclick="setProtocol('anthropic',this)"
+            class="proto-btn cursor-pointer px-4 py-1.5 rounded-full text-[12.5px] font-semibold text-slate-400 border border-slate-700 hover:text-slate-200 hover:border-slate-600 transition-colors">Anthropic</button>
           <button type="button" id="proto-mcp" onclick="setProtocol('mcp',this)"
             class="proto-btn cursor-pointer px-4 py-1.5 rounded-full text-[12.5px] font-semibold text-slate-400 border border-slate-700 hover:text-slate-200 hover:border-slate-600 transition-colors">MCP</button>
         </div>
@@ -114,6 +120,39 @@
     </div>
   </div>
 
+  <!-- ── Global Scenarios panel ──────────────────────────────────────────── -->
+  <div id="panel-global-scenarios" class="hidden flex flex-1 min-h-0">
+    <!-- Left: form -->
+    <div class="flex flex-col w-80 xl:w-96 shrink-0 border-r border-slate-800 overflow-y-auto">
+      <form class="p-5 flex flex-col gap-3"
+        hx-post="/ui/global-scenarios"
+        hx-target="#global-sc-paged"
+        hx-swap="outerHTML"
+        hx-on::after-request="this.reset()">
+        <div class="flex flex-col gap-1.5">
+          <label class="label">Keywords <span class="normal-case font-normal text-slate-600">(comma-separated)</span></label>
+          <input name="keywords" type="text" placeholder="invoice, billing, payment"
+            class="bg-raised border border-slate-700 text-slate-200 text-[12.5px] font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-accent/40 placeholder:text-slate-600" />
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="label">Response</label>
+          <textarea name="response" rows="5" placeholder="The mock response text to stream back…"
+            class="bg-raised border border-slate-700 text-slate-300 text-[12.5px] rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-accent/40 placeholder:text-slate-600"></textarea>
+        </div>
+        <button type="submit"
+          class="cursor-pointer bg-accent/20 text-accent font-bold text-[13px] px-5 py-2 rounded-full border border-accent/30 hover:bg-accent/30 transition-colors">
+          Add scenario
+        </button>
+      </form>
+    </div>
+    <!-- Right: list -->
+    <div class="flex-1 overflow-y-auto"
+      hx-get="/ui/global-scenarios"
+      hx-trigger="load-global-scenarios">
+      <div class="text-[12px] text-slate-600 text-center py-8">Loading…</div>
+    </div>
+  </div>
+
 </div>
 
 <style>
@@ -121,13 +160,13 @@
   .dash-tab { color:rgb(100 116 139); border-bottom:2px solid transparent; margin-bottom:-1px; }
   .dash-tab:hover { color:white; }
   .dash-tab.active { color:white; border-bottom-color:var(--accent); }
-  .detail-tab { color:rgb(100 116 139); }
+  .detail-tab { color:rgb(100 116 139); padding: 0 12px; height:100%; display:flex; align-items:center; border-bottom:2px solid transparent; margin-bottom:-1px; }
   .detail-tab:hover { color:white; }
-  .detail-tab.active { color:white; border-bottom:2px solid var(--accent); }
+  .detail-tab.active { color:white; border-bottom-color:var(--accent); }
   .tenant-item { display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12.5px; font-family:monospace; color:rgb(148 163 184); transition:background .1s,color .1s; }
   .tenant-item:hover { background:rgb(var(--color-surface)); color:white; }
   .tenant-item.active { background:rgb(var(--color-surface)); color:white; }
-  .chaos-btn { color:rgb(148 163 184); border-color:rgb(51 65 85); }
+.chaos-btn { color:rgb(148 163 184); border-color:rgb(51 65 85); }
   .chaos-btn:hover { color:white; border-color:rgb(71 85 105); }
   .chaos-btn.active { color:var(--accent); background:var(--accent-10); border-color:var(--accent-30); }
   .badge-post { color: var(--pink); background: var(--pink-10); border-color: var(--pink-30); }
@@ -141,6 +180,7 @@
     document.querySelectorAll(".dash-tab").forEach(b => b.classList.remove("active"));
     document.querySelector(`[data-panel="${name}"]`).classList.add("active");
     if (name === "tenants") htmx.trigger(document.getElementById("tenant-sidebar-list"), "load-tenants");
+    if (name === "global-scenarios") htmx.trigger(document.querySelector("#panel-global-scenarios [hx-trigger]"), "load-global-scenarios");
   }
 
   function setDetailTab(btn) {
@@ -203,7 +243,12 @@
       if (body.messages?.length) body.messages[body.messages.length - 1].content = kw;
       bodyEl.value = JSON.stringify(body, null, 2);
     } catch (_) {
-      bodyEl.value = JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content: kw }], stream: true }, null, 2);
+      const tid = document.getElementById("pg-tenant").value;
+      if (currentProtocol === "anthropic") {
+        bodyEl.value = JSON.stringify({ model: "claude-opus-4-5", max_tokens: 1024, messages: [{ role: "user", content: kw }], stream: true }, null, 2);
+      } else {
+        bodyEl.value = JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content: kw }], stream: true }, null, 2);
+      }
     }
   }
 
@@ -275,18 +320,23 @@
   };
   function getHint(id) { for (const [k,v] of Object.entries(HINTS)) if (id.includes(k)) return v; return "Hello! What can you help me with?"; }
   function makeOpenAIBody(tid) { return JSON.stringify({model:"gpt-4o",messages:[{role:"user",content:getHint(tid)}],stream:true},null,2); }
+  function makeAnthropicBody(tid) { return JSON.stringify({model:"claude-opus-4-5",max_tokens:1024,messages:[{role:"user",content:getHint(tid)}],stream:true},null,2); }
   const MCP_BODY = JSON.stringify({jsonrpc:"2.0",id:1,method:"tools/list",params:{}},null,2);
   let currentProtocol = "openai";
   const PROTO_ON  = "proto-btn cursor-pointer px-4 py-1.5 rounded-full text-[12.5px] font-semibold bg-accent/10 text-accent border border-accent/25 transition-colors";
   const PROTO_OFF = "proto-btn cursor-pointer px-4 py-1.5 rounded-full text-[12.5px] font-semibold text-slate-400 border border-slate-700 hover:text-slate-200 hover:border-slate-600 transition-colors";
 
+  const PROTO_ENDPOINT = { openai: "/v1/chat/completions", anthropic: "/v1/messages", mcp: "/mcp/message" };
+
   function setProtocol(proto, btn) {
     currentProtocol = proto;
     document.querySelectorAll(".proto-btn").forEach(b => b.className = PROTO_OFF);
     btn.className = PROTO_ON;
-    document.getElementById("pg-endpoint").textContent = proto === "openai" ? "/v1/chat/completions" : "/mcp/message";
+    document.getElementById("pg-endpoint").textContent = PROTO_ENDPOINT[proto];
     const tid = document.getElementById("pg-tenant").value;
-    document.getElementById("pg-body").value = proto === "openai" ? makeOpenAIBody(tid) : MCP_BODY;
+    if (proto === "openai") document.getElementById("pg-body").value = makeOpenAIBody(tid);
+    else if (proto === "anthropic") document.getElementById("pg-body").value = makeAnthropicBody(tid);
+    else document.getElementById("pg-body").value = MCP_BODY;
   }
 
   async function sendRequest() {
@@ -296,7 +346,7 @@
     const statusEl = document.getElementById("response-status");
     const label    = document.getElementById("send-label");
     if (!tenantId) { output.textContent = "Error: select a tenant first."; return; }
-    const endpoint = currentProtocol === "openai" ? "/v1/chat/completions" : "/mcp/message";
+    const endpoint = PROTO_ENDPOINT[currentProtocol];
     label.textContent = "Sending…";
     output.textContent = "";
     statusEl.textContent = "";
@@ -320,12 +370,22 @@
           const events = raw.split("\n\n");
           raw = events.pop();
           for (const event of events) {
-            for (const line of event.split("\n")) {
-              if (!line.startsWith("data: ")) continue;
-              const data = line.slice(6).trim();
-              if (data === "[DONE]") continue;
-              try { const delta = JSON.parse(data).choices?.[0]?.delta; if (delta?.content) text += delta.content; } catch (_) {}
+            const lines = event.split("\n");
+            let eventType = "", dataLine = "";
+            for (const line of lines) {
+              if (line.startsWith("event: ")) eventType = line.slice(7).trim();
+              else if (line.startsWith("data: ")) dataLine = line.slice(6).trim();
             }
+            if (!dataLine || dataLine === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(dataLine);
+              if (eventType === "content_block_delta" || parsed.type === "content_block_delta") {
+                if (parsed.delta?.text) text += parsed.delta.text;
+              } else {
+                const delta = parsed.choices?.[0]?.delta;
+                if (delta?.content) text += delta.content;
+              }
+            } catch (_) {}
           }
           output.textContent = text || "…";
           output.scrollTop = output.scrollHeight;

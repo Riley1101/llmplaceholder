@@ -41,6 +41,8 @@ func main() {
 	// ── LLM / MCP ────────────────────────────────────────────────────────────
 	mux.HandleFunc("POST /v1/chat/completions",
 		adapter.TenantMiddleware(chaosManager.Middleware(adapter.HandleOpenAI(dbManager))))
+	mux.HandleFunc("POST /v1/messages",
+		adapter.TenantMiddleware(chaosManager.Middleware(adapter.HandleAnthropic(dbManager))))
 	mux.HandleFunc("POST /mcp/message",
 		adapter.TenantMiddleware(adapter.HandleMCPMessage(dbManager)))
 	mux.HandleFunc("GET /mcp/sse",
@@ -53,6 +55,9 @@ func main() {
 	mux.HandleFunc("GET /ui/tenants/{id}/state",                        adapter.HandleUIGetStateTab(dbManager))
 	mux.HandleFunc("PUT /ui/tenants/{id}/state",                        adapter.HandleUISaveState(dbManager))
 	mux.HandleFunc("GET /ui/tenants/{id}/scenarios",                    adapter.HandleUIGetScenariosTab(dbManager))
+	mux.HandleFunc("GET /ui/global-scenarios",                          adapter.HandleUIGetGlobalScenarios())
+	mux.HandleFunc("POST /ui/global-scenarios",                         adapter.HandleUICreateGlobalScenario())
+	mux.HandleFunc("DELETE /ui/global-scenarios/{id}",                  adapter.HandleUIDeleteGlobalScenario())
 	mux.HandleFunc("GET /ui/tenants/{id}/mock-scenarios",               adapter.HandleUIGetMockScenarios())
 	mux.HandleFunc("POST /ui/tenants/{id}/scenarios",                   adapter.HandleUICreateScenario(dbManager))
 	mux.HandleFunc("DELETE /ui/tenants/{id}/scenarios/{sid}",           adapter.HandleUIDeleteScenario(dbManager))

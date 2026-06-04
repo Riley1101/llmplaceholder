@@ -104,6 +104,21 @@ func ListToolsForTenant(tenantScenarios []models.TenantScenario, includeGlobal b
 	return tools
 }
 
+// AddGlobalScenario appends a new scenario to the in-memory GlobalRegistry.
+func AddGlobalScenario(s models.MockScenario) {
+	GlobalRegistry = append(GlobalRegistry, s)
+}
+
+// DeleteGlobalScenario removes a scenario by ID from the in-memory GlobalRegistry.
+func DeleteGlobalScenario(id string) {
+	for i, s := range GlobalRegistry {
+		if s.ID == id {
+			GlobalRegistry = append(GlobalRegistry[:i], GlobalRegistry[i+1:]...)
+			return
+		}
+	}
+}
+
 func getFallback() models.MockScenario {
 	for _, scenario := range GlobalRegistry {
 		if scenario.ID == "fallback" {

@@ -11,9 +11,10 @@ type TenantContextKey string
 const TenantIDKey TenantContextKey = "tenant_id"
 
 const (
-	ProtocolOpenAI Protocol = "openai"
-	ProtocolMCP    Protocol = "mcp"
-	ProtocolA2A    Protocol = "a2a"
+	ProtocolOpenAI    Protocol = "openai"
+	ProtocolAnthropic Protocol = "anthropic"
+	ProtocolMCP       Protocol = "mcp"
+	ProtocolA2A       Protocol = "a2a"
 )
 
 // MockScenario defines a complete conversational and functional blueprint
@@ -40,6 +41,17 @@ type TenantScenario struct {
 type OpenAIChatRequest struct {
 	Model    string `json:"model"`
 	Messages []struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	} `json:"messages"`
+	Stream bool `json:"stream"`
+}
+
+// AnthropicMessageRequest represents standard /v1/messages payload
+type AnthropicMessageRequest struct {
+	Model     string `json:"model"`
+	MaxTokens int    `json:"max_tokens"`
+	Messages  []struct {
 		Role    string `json:"role"`
 		Content string `json:"content"`
 	} `json:"messages"`

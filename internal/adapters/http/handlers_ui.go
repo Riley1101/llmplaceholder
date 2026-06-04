@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"llmplaceholder/internal/chaos"
 	"llmplaceholder/internal/core/models"
 	"llmplaceholder/internal/core/registry"
@@ -296,6 +297,85 @@ func HandleUIGetMockScenarios() http.HandlerFunc {
 		tenantID := r.PathValue("id")
 		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 		renderPartial(w, "tenant-mock-scenarios", buildMockPage(tenantID, page))
+	}
+}
+
+// GET /ui/global-scenarios?page=N
+func HandleUIGetGlobalScenarios() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		renderPartial(w, "global-scenarios-list", buildGlobalScenariosPage(page))
+	}
+}
+
+// POST /ui/global-scenarios  form: keywords, response
+func HandleUICreateGlobalScenario() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "bad form", http.StatusBadRequest)
+			return
+		}
+		raw := r.FormValue("keywords")
+		response := strings.TrimSpace(r.FormValue("response"))
+		if raw == "" || response == "" {
+			http.Error(w, "keywords and response required", http.StatusBadRequest)
+			return
+		}
+		var kws []string
+		for _, k := range strings.Split(raw, ",") {
+			if k = strings.TrimSpace(k); k != "" {
+				kws = append(kws, strings.ToLower(k))
+			}
+		}
+		id := "custom_" + strings.ReplaceAll(uuid.New().String(), "-", "")[:8]
+		registry.AddGlobalScenario(models.MockScenario{
+			ID:           id,
+			Keywords:     kws,
+			FullResponse: response,
+		})
+		renderPartial(w, "global-scenarios-list", buildGlobalScenariosPage(0))
+	}
+}
+
+// DELETE /ui/global-scenarios/{id}
+func HandleUIDeleteGlobalScenario() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		registry.DeleteGlobalScenario(r.PathValue("id"))
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func buildGlobalScenariosPage(page int) uiMockScenariosData {
+	all := make([]models.MockScenario, 0)
+	for _, s := range registry.GlobalRegistry {
+		if len(s.Keywords) > 0 {
+			all = append(all, s)
+		}
+	}
+	total := len(all)
+	totalPages := (total + mockPageSize - 1) / mockPageSize
+	if totalPages == 0 {
+		totalPages = 1
+	}
+	if page < 0 {
+		page = 0
+	}
+	if page >= totalPages {
+		page = totalPages - 1
+	}
+	start := page * mockPageSize
+	end := start + mockPageSize
+	if end > total {
+		end = total
+	}
+	return uiMockScenariosData{
+		Scenarios:  all[start:end],
+		Page:       page,
+		TotalPages: totalPages,
+		PrevPage:   page - 1,
+		NextPage:   page + 1,
+		HasPrev:    page > 0,
+		HasNext:    page < totalPages-1,
 	}
 }
 

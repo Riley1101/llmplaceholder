@@ -23,6 +23,8 @@
           class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">JavaScript</button>
         <button type="button" id="tab-python" onclick="showTab('python',this)"
           class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">Python</button>
+        <button type="button" id="tab-anthropic" onclick="showTab('anthropic',this)"
+          class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">Anthropic</button>
         <button type="button" id="tab-mcp"    onclick="showTab('mcp',this)"
           class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">MCP</button>
       </div>
@@ -64,6 +66,21 @@ for chunk in client.chat.completions.create(
     stream=True,
 ):
     print(chunk.choices[0].delta.content or "", end="")</pre>
+        <pre id="qs-anthropic" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">import anthropic
+
+client = anthropic.Anthropic(
+    base_url="http://localhost:8080",
+    api_key="placeholder",
+    default_headers={"X-Tenant-ID": "tenant_ecommerce"},
+)
+
+with client.messages.stream(
+    model="claude-opus-4-5",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Show me recent invoices"}],
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)</pre>
         <pre id="qs-mcp" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre"># List tools
 curl -X POST http://localhost:8080/mcp/message \
   -H "X-Tenant-ID: tenant_ecommerce" \
@@ -95,6 +112,11 @@ curl -N http://localhost:8080/mcp/sse \
         <span class="badge-post shrink-0 mt-0.5">POST</span>
         <code class="font-mono text-[13px] text-slate-200 shrink-0 w-56">/v1/chat/completions</code>
         <span class="text-[13px] text-slate-500">OpenAI-compatible chat. Pass <code class="ic">stream: true</code> to receive token-by-token SSE, or <code class="ic">stream: false</code> for a single JSON response.</span>
+      </div>
+      <div class="flex items-start gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors">
+        <span class="badge-post shrink-0 mt-0.5">POST</span>
+        <code class="font-mono text-[13px] text-slate-200 shrink-0 w-56">/v1/messages</code>
+        <span class="text-[13px] text-slate-500">Anthropic Messages API. Accepts <code class="ic">model</code>, <code class="ic">messages</code>, <code class="ic">max_tokens</code>. Pass <code class="ic">stream: true</code> for SSE with <code class="ic">content_block_delta</code> events, or <code class="ic">stream: false</code> for a single JSON response.</span>
       </div>
     </div>
   </div>
