@@ -18,7 +18,7 @@ WORKDIR /app
 
 COPY --from=builder /build/server .
 COPY frontend/ ./frontend/
-COPY data/tenants/ ./data/tenants/
+COPY data/tenants/ ./seeds/
 
 RUN mkdir -p /app/data
 

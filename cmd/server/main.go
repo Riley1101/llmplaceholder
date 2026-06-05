@@ -28,7 +28,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to init DB: %v", err)
 	}
-	dbManager.MigrateFromFiles("./data/tenants")
+	dbManager.MigrateFromFiles("./seeds")
 
 	if err := adapter.LoadTemplates("./frontend/templates"); err != nil {
 		log.Fatalf("Failed to load templates: %v", err)
