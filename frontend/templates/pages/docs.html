@@ -10,6 +10,7 @@
       <a href="#tenants"           class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">Tenants</a>
       <a href="#scenarios"         class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">Scenarios</a>
       <a href="#mcp-tools"         class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">MCP Tools</a>
+      <a href="#mcp-editor"        class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">MCP Editor</a>
       <a href="#state"             class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">Tenant State</a>
       <a href="#chaos"             class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">Chaos Testing</a>
       <a href="#api-tokens"        class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">API Tokens</a>
@@ -52,7 +53,7 @@
           <span class="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
           <span class="text-[11px] text-slate-500 font-mono">quick start</span>
         </div>
-        <pre class="p-5 text-[12.5px] font-mono text-slate-300 leading-relaxed overflow-x-auto">curl -X POST http://localhost:8080/v1/chat/completions \
+        <pre class="p-5 text-[12.5px] font-mono text-slate-300 leading-relaxed overflow-x-auto">curl -X POST https://llmplaceholder.com/v1/chat/completions \
   -H "X-Tenant-ID: my-app" \
   -H "Content-Type: application/json" \
   -d '{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}]}'</pre>
@@ -68,7 +69,7 @@
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
           <p class="text-[13px] font-semibold text-white mb-2">Creating a tenant</p>
           <p class="text-[13px] text-slate-400 mb-4">Use the Playground UI or the API. Tenant IDs can be any string.</p>
-          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/public/tenants \
+          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST https://llmplaceholder.com/public/tenants \
   -H "Content-Type: application/json" \
   -d '{"tenant_id": "my-app"}'</pre>
         </div>
@@ -133,7 +134,7 @@ curl -X POST .../mcp/message -H "X-Tenant-ID: my-app" ...</pre>
 
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
           <p class="text-[13px] font-semibold text-white mb-3">Adding a scenario via API</p>
-          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/public/tenants/my-app/scenarios \
+          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST https://llmplaceholder.com/public/tenants/my-app/scenarios \
   -H "Content-Type: application/json" \
   -d '{
     "keywords": ["invoice", "billing"],
@@ -167,7 +168,7 @@ curl -X POST .../mcp/message -H "X-Tenant-ID: my-app" ...</pre>
 
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
           <p class="text-[13px] font-semibold text-white mb-3">Adding a tool via API</p>
-          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/public/tenants/my-app/scenarios \
+          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST https://llmplaceholder.com/public/tenants/my-app/scenarios \
   -H "Content-Type: application/json" \
   -d '{
     "keywords": [],
@@ -184,10 +185,73 @@ curl -X POST .../mcp/message -H "X-Tenant-ID: my-app" ...</pre>
 
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
           <p class="text-[13px] font-semibold text-white mb-3">Calling the tool</p>
-          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/mcp/message \
+          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST https://llmplaceholder.com/mcp/message \
   -H "X-Tenant-ID: my-app" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_invoice_list"}}'</pre>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- MCP Editor Integration -->
+    <section id="mcp-editor">
+      <h2 class="text-xl font-bold text-white tracking-tight mb-1">MCP Editor Integration</h2>
+      <p class="text-[13px] text-slate-500 mb-6">Let AI coding agents (Claude Code, Cursor, etc.) create draft scenarios in your tenant via the hosted MCP endpoint.</p>
+
+      <div class="space-y-4">
+        <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800 mb-2">
+          <div class="px-5 py-3.5 flex items-start gap-3">
+            <div class="w-5 h-5 rounded-full bg-accent/20 text-accent text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
+            <div>
+              <p class="text-[13px] font-medium text-white mb-0.5">Get an API token</p>
+              <p class="text-[13px] text-slate-500">Go to <a href="/playground" class="text-accent hover:underline">Playground</a> → <strong class="text-slate-300">API Tokens tab</strong> → Generate. Copy it — shown once.</p>
+            </div>
+          </div>
+          <div class="px-5 py-3.5 flex items-start gap-3">
+            <div class="w-5 h-5 rounded-full bg-accent/20 text-accent text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
+            <div>
+              <p class="text-[13px] font-medium text-white mb-0.5">Configure your editor</p>
+              <p class="text-[13px] text-slate-500 mb-3">Add the MCP server to your editor config. For Claude Code, add to <code class="ic">.claude/settings.json</code>:</p>
+              <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">{
+  "mcpServers": {
+    "llmplaceholder": {
+      "type": "http",
+      "url": "https://llmplaceholder.com/mcp/message",
+      "headers": {
+        "X-Tenant-ID": "my-tenant",
+        "Authorization": "Bearer &lt;your-api-token&gt;"
+      }
+    }
+  }
+}</pre>
+            </div>
+          </div>
+          <div class="px-5 py-3.5 flex items-start gap-3">
+            <div class="w-5 h-5 rounded-full bg-accent/20 text-accent text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
+            <div>
+              <p class="text-[13px] font-medium text-white mb-0.5">Review drafts in Playground</p>
+              <p class="text-[13px] text-slate-500">Scenarios the agent creates land as <strong class="text-yellow-400">drafts</strong>. Go to the Scenarios tab and approve or reject each one before it goes active.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-surface border border-slate-800 rounded-xl p-5">
+          <p class="text-[13px] font-semibold text-white mb-3">Available tools</p>
+          <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
+            <div class="flex items-start gap-4 px-4 py-3">
+              <code class="font-mono text-[13px] text-accent shrink-0 w-40">create_scenario</code>
+              <span class="text-[13px] text-slate-500">Create a draft scenario (<code class="ic">keywords</code> + <code class="ic">response</code>). Requires review to activate.</span>
+            </div>
+            <div class="flex items-start gap-4 px-4 py-3">
+              <code class="font-mono text-[13px] text-accent shrink-0 w-40">list_scenarios</code>
+              <span class="text-[13px] text-slate-500">List scenarios, optionally filtered by <code class="ic">status</code>: <code class="ic">active</code>, <code class="ic">draft</code>, or all.</span>
+            </div>
+            <div class="flex items-start gap-4 px-4 py-3">
+              <code class="font-mono text-[13px] text-accent shrink-0 w-40">get_tenant</code>
+              <span class="text-[13px] text-slate-500">Get tenant info and scenario counts.</span>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -201,7 +265,7 @@ curl -X POST .../mcp/message -H "X-Tenant-ID: my-app" ...</pre>
       <div class="space-y-4">
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
           <p class="text-[13px] font-semibold text-white mb-3">Setting state via API</p>
-          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X PUT http://localhost:8080/public/tenants/my-app/state \
+          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X PUT https://llmplaceholder.com/public/tenants/my-app/state \
   -H "Content-Type: application/json" \
   -d '{
     "state": {
@@ -267,12 +331,12 @@ curl -X POST .../mcp/message -H "X-Tenant-ID: my-app" ...</pre>
 
       <div class="bg-surface border border-slate-800 rounded-xl p-5">
         <p class="text-[13px] font-semibold text-white mb-3">Setting chaos via API</p>
-        <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/public/tenants/my-app/chaos \
+        <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST https://llmplaceholder.com/public/tenants/my-app/chaos \
   -H "Content-Type: application/json" \
   -d '{"profile": "rate_limit"}'
 
 # Reset to normal
-curl -X POST http://localhost:8080/public/tenants/my-app/chaos \
+curl -X POST https://llmplaceholder.com/public/tenants/my-app/chaos \
   -H "Content-Type: application/json" \
   -d '{"profile": "none"}'</pre>
       </div>
@@ -296,7 +360,7 @@ curl -X POST http://localhost:8080/public/tenants/my-app/chaos \
 
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
           <p class="text-[13px] font-semibold text-white mb-3">Using a token</p>
-          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/public/tenants \
+          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST https://llmplaceholder.com/public/tenants \
   -H "Authorization: Bearer &lt;your-token&gt;" \
   -H "Content-Type: application/json" \
   -d '{"tenant_id": "ci-test-run-42"}'</pre>

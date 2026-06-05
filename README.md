@@ -90,6 +90,39 @@ curl -X POST https://llmplaceholder.com/public/tenants/my-tenant/scenarios \
   -d '{"keywords":["invoice","billing"],"response":"Here are your recent invoices..."}'
 ```
 
+## MCP editor integration
+
+Let AI coding agents (Claude Code, Cursor, etc.) create draft scenarios directly in your tenant.
+
+**1. Get an API token** — Playground → API Tokens tab → Generate.
+
+**2. Configure your editor.** For Claude Code, add to `.claude/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "llmplaceholder": {
+      "type": "http",
+      "url": "https://llmplaceholder.com/mcp/message",
+      "headers": {
+        "X-Tenant-ID": "my-tenant",
+        "Authorization": "Bearer <your-api-token>"
+      }
+    }
+  }
+}
+```
+
+The agent can then call `create_scenario`, `list_scenarios`, and `get_tenant` tools. Draft scenarios land in the Scenarios tab for your review before going active.
+
+**Available tools:**
+
+| Tool | Description |
+|------|-------------|
+| `create_scenario` | Create a draft scenario (keywords + response). Requires review to activate. |
+| `list_scenarios` | List scenarios, optionally filtered by `active` or `draft`. |
+| `get_tenant` | Get tenant info and scenario counts. |
+
 ## Chaos injection
 
 Profiles: `none`, `rate_limit`, `server_error`, `latency`.

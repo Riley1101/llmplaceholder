@@ -66,7 +66,7 @@ func HandleAnthropic(dbManager *db.TenantDBManager) http.HandlerFunc {
 			prompt = req.Messages[len(req.Messages)-1].Content
 		}
 
-		tenantScenarios, _ := dbManager.GetScenariosForTenant(tenantID)
+		tenantScenarios, _ := dbManager.GetActiveScenariosForTenant(tenantID)
 		scenario := registry.MatchIntent(prompt, tenantScenarios)
 
 		if !req.Stream {
@@ -107,7 +107,7 @@ func HandleOpenAI(dbManager *db.TenantDBManager) http.HandlerFunc {
 			prompt = req.Messages[len(req.Messages)-1].Content
 		}
 
-		tenantScenarios, _ := dbManager.GetScenariosForTenant(tenantID)
+		tenantScenarios, _ := dbManager.GetActiveScenariosForTenant(tenantID)
 		scenario := registry.MatchIntent(prompt, tenantScenarios)
 
 		if !req.Stream {

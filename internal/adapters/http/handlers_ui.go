@@ -25,11 +25,12 @@ type uiDetailData struct {
 }
 
 type uiScenarioTabData struct {
-	TenantID  string
-	Name      string
-	PathID    string
-	Scenarios []models.TenantScenario
-	IsGlobal  bool
+	TenantID        string
+	Name            string
+	PathID          string
+	Scenarios       []models.TenantScenario
+	DraftScenarios  []models.TenantScenario
+	IsGlobal        bool
 }
 
 type uiToolsTabData struct {
@@ -147,13 +148,15 @@ func buildToolsData(tenantID string, dbManager *db.TenantDBManager, isGlobal boo
 }
 
 func buildScenarioData(tenantID string, dbManager *db.TenantDBManager, isGlobal bool) uiScenarioTabData {
-	scenarios, _ := dbManager.GetScenariosForTenant(tenantID)
+	active, _ := dbManager.GetActiveScenariosForTenant(tenantID)
+	drafts, _ := dbManager.GetDraftScenariosForTenant(tenantID)
 	return uiScenarioTabData{
-		TenantID:  tenantID,
-		Name:      dbManager.TenantName(tenantID),
-		PathID:    url.PathEscape(tenantID),
-		Scenarios: scenarios,
-		IsGlobal:  isGlobal,
+		TenantID:       tenantID,
+		Name:           dbManager.TenantName(tenantID),
+		PathID:         url.PathEscape(tenantID),
+		Scenarios:      active,
+		DraftScenarios: drafts,
+		IsGlobal:       isGlobal,
 	}
 }
 
@@ -311,6 +314,18 @@ func HandleUIDeleteScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
 		}
 		dbManager.DeleteScenario(r.PathValue("sid"))
 		w.WriteHeader(http.StatusOK)
+	}
+}
+
+// POST /ui/tenants/{id}/scenarios/{sid}/approve
+func HandleUIApproveScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tenantID := r.PathValue("id")
+		if _, ok := resolveAccess(w, r, dbManager, tenantID, true); !ok {
+			return
+		}
+		dbManager.ApproveScenario(r.PathValue("sid"))
+		renderPartial(w, "tenant-scenario-items", buildScenarioData(tenantID, dbManager, false))
 	}
 }
 
