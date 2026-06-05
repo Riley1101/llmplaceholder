@@ -1,0 +1,15 @@
+# flyctl launch added from .gitignore
+# SQLite
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.sqlite
+**/*.sqlite3
+**/tmp
+
+# Binary
+**/llmplaceholder
+
+
+**/.env
+fly.toml

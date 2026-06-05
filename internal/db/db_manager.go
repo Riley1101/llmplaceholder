@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
@@ -15,6 +16,7 @@ import (
 
 	"llmplaceholder/internal/core/models"
 
+	turso "turso.tech/database/tursogo"
 	_ "modernc.org/sqlite"
 )
 
@@ -25,9 +27,35 @@ type TenantDBManager struct {
 func NewTenantDBManager(dbPath string) (*TenantDBManager, error) {
 	os.MkdirAll(filepath.Dir(dbPath), 0755)
 
-	db, err := sql.Open("sqlite", dbPath)
-	if err != nil {
-		return nil, err
+	var db *sql.DB
+	var err error
+
+	tursoURL := os.Getenv("TURSO_DATABASE_URL")
+	tursoToken := os.Getenv("TURSO_AUTH_TOKEN")
+
+	if tursoURL != "" && tursoToken != "" {
+		bootstrap := true
+		var syncDB *turso.TursoSyncDb
+		syncDB, err = turso.NewTursoSyncDb(context.Background(), turso.TursoSyncDbConfig{
+			Path:             dbPath,
+			RemoteUrl:        tursoURL,
+			AuthToken:        tursoToken,
+			BootstrapIfEmpty: &bootstrap,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("turso sync init: %w", err)
+		}
+		db, err = syncDB.Connect(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("turso connect: %w", err)
+		}
+		log.Println("[DB] Using Turso remote:", tursoURL)
+	} else {
+		db, err = sql.Open("sqlite", dbPath)
+		if err != nil {
+			return nil, err
+		}
+		log.Println("[DB] Using local SQLite:", dbPath)
 	}
 
 	db.Exec("PRAGMA journal_mode=WAL")
