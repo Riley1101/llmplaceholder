@@ -19,6 +19,7 @@ const stateCookieName = "oauth_state"
 
 func githubClientID() string     { return os.Getenv("GITHUB_CLIENT_ID") }
 func githubClientSecret() string { return os.Getenv("GITHUB_CLIENT_SECRET") }
+func isProduction() bool         { return os.Getenv("ENV") == "production" }
 
 func randomHex(n int) string {
 	b := make([]byte, n)
@@ -68,6 +69,7 @@ func HandleGithubLogin() http.HandlerFunc {
 			Path:     "/",
 			MaxAge:   300,
 			HttpOnly: true,
+			Secure:   isProduction(),
 			SameSite: http.SameSiteLaxMode,
 		})
 		authURL := fmt.Sprintf(
@@ -135,6 +137,7 @@ func HandleGithubCallback(dbManager *db.TenantDBManager) http.HandlerFunc {
 			Path:     "/",
 			MaxAge:   7 * 24 * 3600,
 			HttpOnly: true,
+			Secure:   isProduction(),
 			SameSite: http.SameSiteLaxMode,
 		})
 

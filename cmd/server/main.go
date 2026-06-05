@@ -81,23 +81,23 @@ func main() {
 	mux.HandleFunc("POST /ui/api-tokens",                          ra(adapter.HandleUICreateToken(dbManager)))
 	mux.HandleFunc("DELETE /ui/api-tokens/{id}",                   ra(adapter.HandleUIDeleteToken(dbManager)))
 
-	// ── Admin reads (public; per-handler access control) ─────────────────────
-	mux.HandleFunc("GET /admin/tenants",                        adapter.HandleListTenants(dbManager))
-	mux.HandleFunc("GET /admin/tenants/{id}",                   adapter.HandleGetTenant(dbManager))
-	mux.HandleFunc("GET /admin/tenants/{id}/scenarios",         adapter.HandleListScenarios(dbManager))
-	mux.HandleFunc("GET /admin/tenants/{id}/settings",          adapter.HandleGetTenantSettings(dbManager))
-	mux.HandleFunc("GET /admin/tenants/{id}/chaos",             adapter.HandleGetTenantChaos(chaosManager, dbManager))
+	// ── Public API reads (per-handler ownership check) ────────────────────────
+	mux.HandleFunc("GET /public/tenants",                        adapter.HandleListTenants(dbManager))
+	mux.HandleFunc("GET /public/tenants/{id}",                   adapter.HandleGetTenant(dbManager))
+	mux.HandleFunc("GET /public/tenants/{id}/scenarios",         adapter.HandleListScenarios(dbManager))
+	mux.HandleFunc("GET /public/tenants/{id}/settings",          adapter.HandleGetTenantSettings(dbManager))
+	mux.HandleFunc("GET /public/tenants/{id}/chaos",             adapter.HandleGetTenantChaos(chaosManager, dbManager))
 
-	// ── Admin writes (require login) ──────────────────────────────────────────
-	mux.HandleFunc("POST /admin/tenants",              ra(adapter.HandleCreateTenant(dbManager)))
-	mux.HandleFunc("PUT /admin/tenants/{id}/state",    ra(adapter.HandleUpdateTenantState(dbManager)))
-	mux.HandleFunc("DELETE /admin/tenants/{id}",       ra(adapter.HandleDeleteTenant(dbManager)))
-	mux.HandleFunc("POST /admin/tenants/{id}/scenarios",          ra(adapter.HandleCreateScenario(dbManager)))
-	mux.HandleFunc("DELETE /admin/tenants/{id}/scenarios/{sid}",  ra(adapter.HandleDeleteScenario(dbManager)))
-	mux.HandleFunc("PATCH /admin/tenants/{id}/settings",          ra(adapter.HandlePatchTenantSettings(dbManager)))
-	mux.HandleFunc("POST /admin/tenants/{id}/chaos",              ra(adapter.HandleSetTenantChaos(chaosManager, dbManager)))
-	mux.HandleFunc("POST /admin/chaos",  ra(adapter.TenantMiddleware(adapter.HandleSetChaos(chaosManager))))
-	mux.HandleFunc("POST /admin/reset",  ra(adapter.TenantMiddleware(adapter.HandleResetTenant(dbManager))))
+	// ── Public API writes (require login) ──────────────────────────────────────
+	mux.HandleFunc("POST /public/tenants",              ra(adapter.HandleCreateTenant(dbManager)))
+	mux.HandleFunc("PUT /public/tenants/{id}/state",    ra(adapter.HandleUpdateTenantState(dbManager)))
+	mux.HandleFunc("DELETE /public/tenants/{id}",       ra(adapter.HandleDeleteTenant(dbManager)))
+	mux.HandleFunc("POST /public/tenants/{id}/scenarios",          ra(adapter.HandleCreateScenario(dbManager)))
+	mux.HandleFunc("DELETE /public/tenants/{id}/scenarios/{sid}",  ra(adapter.HandleDeleteScenario(dbManager)))
+	mux.HandleFunc("PATCH /public/tenants/{id}/settings",          ra(adapter.HandlePatchTenantSettings(dbManager)))
+	mux.HandleFunc("POST /public/tenants/{id}/chaos",              ra(adapter.HandleSetTenantChaos(chaosManager, dbManager)))
+	mux.HandleFunc("POST /public/chaos",  ra(adapter.TenantMiddleware(adapter.HandleSetChaos(chaosManager, dbManager))))
+	mux.HandleFunc("POST /public/reset",  ra(adapter.TenantMiddleware(adapter.HandleResetTenant(dbManager))))
 
 	port := ":8080"
 	fmt.Printf("🚀 llmplaceholder server running on http://localhost%s\n", port)

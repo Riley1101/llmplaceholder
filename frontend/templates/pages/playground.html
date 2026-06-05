@@ -203,7 +203,7 @@
     }
     list.innerHTML = `<div class="text-[11px] text-slate-600 text-center py-4">Loading…</div>`;
     try {
-      const data      = await fetch(`/admin/tenants/${encodeURIComponent(id)}/scenarios`).then(r => r.json());
+      const data      = await fetch(`/public/tenants/${encodeURIComponent(id)}/scenarios`).then(r => r.json());
       const scenarios = (data.scenarios || []).filter(s => s.keywords?.length);
       const parts     = [];
 
@@ -257,7 +257,7 @@
   async function loadTenantSidebar() {
     const list = document.getElementById("tenant-sidebar-list");
     try {
-      const data    = await fetch("/admin/tenants").then(r => r.json());
+      const data    = await fetch("/public/tenants").then(r => r.json());
       const tenants = data.tenants || [];
       if (!tenants.length) {
         list.innerHTML = `<div class="text-[12px] text-slate-600 px-3 py-4 text-center">No tenants.</div>`;
@@ -281,7 +281,7 @@
     const id    = input.value.trim();
     if (!id) return;
     try {
-      const res  = await fetch("/admin/tenants", {
+      const res  = await fetch("/public/tenants", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenant_id: id }),
       });
@@ -302,7 +302,7 @@
     const id = selectedTenant;
     if (!id || !confirm(`Delete tenant "${id}"?`)) return;
     try {
-      const res = await fetch(`/admin/tenants/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const res = await fetch(`/public/tenants/${encodeURIComponent(id)}`, { method: "DELETE" });
       if (res.ok) {
         selectedTenant = "";
         document.getElementById("detail-empty").classList.remove("hidden");
@@ -406,7 +406,7 @@
   async function loadTenants() {
     const sel = document.getElementById("pg-tenant");
     try {
-      const data    = await fetch("/admin/tenants").then(r => r.json());
+      const data    = await fetch("/public/tenants").then(r => r.json());
       const tenants = data.tenants || [];
       sel.innerHTML = tenants.map(t => `<option value="${t.id}">${t.id}${t.is_global ? " (global)" : ""}</option>`).join("") || `<option value="">No tenants</option>`;
       const preselect = new URLSearchParams(location.search).get("tenant");

@@ -41,7 +41,7 @@ func adminCheckWrite(w http.ResponseWriter, dbManager *db.TenantDBManager, tenan
 
 // ── Tenant CRUD ───────────────────────────────────────────────────────────────
 
-// GET /admin/tenants
+// GET /public/tenants
 func HandleListTenants(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := ""
@@ -60,7 +60,7 @@ func HandleListTenants(dbManager *db.TenantDBManager) http.HandlerFunc {
 	}
 }
 
-// POST /admin/tenants  body: {"tenant_id":"...", "state":{...}}
+// POST /public/tenants  body: {"tenant_id":"...", "state":{...}}
 func HandleCreateTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := UserFromContext(r).ID
@@ -88,7 +88,7 @@ func HandleCreateTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	}
 }
 
-// GET /admin/tenants/{id}
+// GET /public/tenants/{id}
 func HandleGetTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
@@ -114,7 +114,7 @@ func HandleGetTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	}
 }
 
-// PUT /admin/tenants/{id}/state  body: {"state":{...}}
+// PUT /public/tenants/{id}/state  body: {"state":{...}}
 func HandleUpdateTenantState(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
@@ -139,7 +139,7 @@ func HandleUpdateTenantState(dbManager *db.TenantDBManager) http.HandlerFunc {
 	}
 }
 
-// DELETE /admin/tenants/{id}
+// DELETE /public/tenants/{id}
 func HandleDeleteTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
@@ -155,10 +155,13 @@ func HandleDeleteTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	}
 }
 
-// POST /admin/reset  (header-based, kept for backward compat)
+// POST /public/reset  (header-based, kept for backward compat)
 func HandleResetTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.Context().Value(TenantIDKey).(string)
+		if !adminCheckWrite(w, dbManager, tenantID, UserFromContext(r).ID) {
+			return
+		}
 		log.Printf("[Admin] Resetting sandbox for Tenant: %s\n", tenantID)
 		if err := dbManager.DeleteState(tenantID); err != nil {
 			jsonErr(w, "failed to reset sandbox", http.StatusInternalServerError)
@@ -170,7 +173,7 @@ func HandleResetTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 
 // ── Scenario CRUD ─────────────────────────────────────────────────────────────
 
-// GET /admin/tenants/{id}/scenarios
+// GET /public/tenants/{id}/scenarios
 func HandleListScenarios(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
@@ -199,7 +202,7 @@ func HandleListScenarios(dbManager *db.TenantDBManager) http.HandlerFunc {
 	}
 }
 
-// POST /admin/tenants/{id}/scenarios
+// POST /public/tenants/{id}/scenarios
 // body: {"keywords":["..."],"response":"...","tool_name":"...","tool_data":{...}}
 func HandleCreateScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -231,7 +234,7 @@ func HandleCreateScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
 	}
 }
 
-// DELETE /admin/tenants/{id}/scenarios/{sid}
+// DELETE /public/tenants/{id}/scenarios/{sid}
 func HandleDeleteScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !adminCheckWrite(w, dbManager, r.PathValue("id"), UserFromContext(r).ID) {
@@ -248,7 +251,7 @@ func HandleDeleteScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
 
 // ── Tenant settings ───────────────────────────────────────────────────────────
 
-// GET /admin/tenants/{id}/settings
+// GET /public/tenants/{id}/settings
 func HandleGetTenantSettings(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
@@ -274,7 +277,7 @@ func HandleGetTenantSettings(dbManager *db.TenantDBManager) http.HandlerFunc {
 	}
 }
 
-// PATCH /admin/tenants/{id}/settings  body: {"include_global_tools": false, ...}
+// PATCH /public/tenants/{id}/settings  body: any JSON key/value pairs to merge into tenant settings
 func HandlePatchTenantSettings(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
@@ -300,10 +303,13 @@ func HandlePatchTenantSettings(dbManager *db.TenantDBManager) http.HandlerFunc {
 
 // ── Chaos ─────────────────────────────────────────────────────────────────────
 
-// POST /admin/chaos  (header-based)
-func HandleSetChaos(chaosManager *chaos.Manager) http.HandlerFunc {
+// POST /public/chaos  (header-based)
+func HandleSetChaos(chaosManager *chaos.Manager, dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.Context().Value(TenantIDKey).(string)
+		if !adminCheckWrite(w, dbManager, tenantID, UserFromContext(r).ID) {
+			return
+		}
 
 		var body struct {
 			Profile string `json:"profile"`
@@ -327,7 +333,7 @@ func HandleSetChaos(chaosManager *chaos.Manager) http.HandlerFunc {
 	}
 }
 
-// POST /admin/tenants/{id}/chaos  body: {"profile":"..."}
+// POST /public/tenants/{id}/chaos  body: {"profile":"..."}
 func HandleSetTenantChaos(chaosManager *chaos.Manager, dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
@@ -356,7 +362,7 @@ func HandleSetTenantChaos(chaosManager *chaos.Manager, dbManager *db.TenantDBMan
 	}
 }
 
-// GET /admin/tenants/{id}/chaos
+// GET /public/tenants/{id}/chaos
 func HandleGetTenantChaos(chaosManager *chaos.Manager, dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")

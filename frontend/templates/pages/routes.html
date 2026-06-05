@@ -5,7 +5,7 @@
   <div class="max-w-5xl mx-auto">
     <h1 class="text-3xl font-extrabold tracking-tight text-white mb-2">Routes &amp; Guide</h1>
     <p class="text-[15px] text-slate-400 max-w-[58ch]">
-      Quick-start examples, full endpoint reference for LLM, MCP, and admin APIs, plus live tenant info.
+      Quick-start examples, full endpoint reference for LLM, MCP, and public APIs, plus live tenant info.
     </p>
   </div>
 </section>
@@ -144,11 +144,11 @@ curl -N http://localhost:8080/mcp/sse \
     <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
       <div class="flex items-start gap-4 px-5 py-3.5">
         <code class="font-mono text-[13px] text-accent shrink-0 w-36">tools/list</code>
-        <span class="text-[13px] text-slate-500">Returns all tools for the tenant. Tenant tools first, then global tools (unless <code class="ic">include_global_tools</code> is <code class="ic">false</code> in tenant settings).</span>
+        <span class="text-[13px] text-slate-500">Returns all tools defined in the tenant's scenarios.</span>
       </div>
       <div class="flex items-start gap-4 px-5 py-3.5">
         <code class="font-mono text-[13px] text-accent shrink-0 w-36">tools/call</code>
-        <span class="text-[13px] text-slate-500">Calls a named tool. Returns mock JSON from the matching tenant scenario, falling back to the global registry.</span>
+        <span class="text-[13px] text-slate-500">Calls a named tool. Returns mock JSON from the matching tenant scenario.</span>
       </div>
       <div class="flex items-start gap-4 px-5 py-3.5">
         <code class="font-mono text-[13px] text-accent shrink-0 w-36">resources/list</code>
@@ -164,85 +164,43 @@ curl -N http://localhost:8080/mcp/sse \
       </div>
     </div>
     <div class="mt-10">
-      <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">State override</p>
-      <p class="text-[13px] text-slate-500 mb-5 max-w-[60ch]">
-        Each tenant has a JSON state store. When <code class="ic">tools/call</code> matches a built-in scenario,
-        it checks whether <code class="ic">state[scenario.state_key]</code> exists — if so, that value replaces
-        the default mock payload. Lets you inject custom data per-tenant without writing new scenarios.
-      </p>
+      <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Quick start</p>
 
       <div class="bg-surface border border-slate-800 rounded-2xl overflow-hidden max-w-2xl">
         <div class="flex px-3 pt-2.5 border-b border-slate-800 gap-0.5">
-          <button type="button" id="mcp-tab-list"   onclick="showMcpTab('list',this)"
+          <button type="button" id="mcp-tab-list" onclick="showMcpTab('list',this)"
             class="mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-white bg-base border border-slate-700 -mb-px rounded-t-md">1. list tools</button>
-          <button type="button" id="mcp-tab-call"   onclick="showMcpTab('call',this)"
-            class="mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">2. call (default)</button>
-          <button type="button" id="mcp-tab-state"  onclick="showMcpTab('state',this)"
-            class="mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">3. set state</button>
-          <button type="button" id="mcp-tab-override" onclick="showMcpTab('override',this)"
-            class="mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">4. call (override)</button>
+          <button type="button" id="mcp-tab-call" onclick="showMcpTab('call',this)"
+            class="mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">2. call tool</button>
         </div>
         <div class="bg-base">
           <pre id="mcp-qs-list" class="p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">curl -s -X POST http://localhost:8080/mcp/message \
-  -H "X-Tenant-ID: saas-demo" \
+  -H "X-Tenant-ID: tenant_saas_growth" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 
-# Returns all tools available to this tenant.
-# Built-in: get_growth_metrics, get_churn_report, … (saas domain)
-# Plus any tools you added in the Playground → Tenants → MCP Tools tab.</pre>
+# Returns all tools defined in this tenant's scenarios:
+# get_growth_metrics, get_churn_report, get_feature_adoption</pre>
           <pre id="mcp-qs-call" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">curl -s -X POST http://localhost:8080/mcp/message \
-  -H "X-Tenant-ID: saas-demo" \
+  -H "X-Tenant-ID: tenant_saas_growth" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call",
        "params":{"name":"get_growth_metrics"}}'
 
-# Returns the built-in mock payload:
+# Returns the tenant scenario's tool_data:
 # { "mrr_usd": 128400, "churn_rate_pct": 2.1, "nrr_pct": 118 }</pre>
-          <pre id="mcp-qs-state" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre"># Write custom data under the scenario's state_key ("growth_metrics")
-curl -s -X PUT http://localhost:8080/admin/tenants/saas-demo/state \
-  -H "Content-Type: application/json" \
-  -d '{
-    "state": {
-      "growth_metrics": {
-        "mrr_usd": 999,
-        "churn_rate_pct": 0.1,
-        "nrr_pct": 150
-      }
-    }
-  }'
-
-# Or set it visually: Playground → Tenants → State tab → Save state</pre>
-          <pre id="mcp-qs-override" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre"># Same call as step 2 — now returns YOUR data
-curl -s -X POST http://localhost:8080/mcp/message \
-  -H "X-Tenant-ID: saas-demo" \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call",
-       "params":{"name":"get_growth_metrics"}}'
-
-# Returns your overridden payload:
-# { "mrr_usd": 999, "churn_rate_pct": 0.1, "nrr_pct": 150 }
-
-# To reset: PUT state back to {} or remove the key.</pre>
         </div>
       </div>
-
-      <p class="text-[12px] text-slate-600 mt-4 max-w-[60ch]">
-        State keys per built-in scenario: <code class="ic">growth_metrics</code> <code class="ic">top_churned_accounts</code>
-        <code class="ic">incidents</code> <code class="ic">deployments</code> <code class="ic">inventory</code>
-        <code class="ic">security_events</code> <code class="ic">matters</code> and more —
-        visible in the Scenarios tab under each built-in entry.
-      </p>
     </div>
 
   </div>
 </section>
 
-<!-- ── Admin routes ──────────────────────────────────────────────────────── -->
-<section class="py-14 px-6 border-b border-slate-800" id="admin">
+<!-- ── Public API routes ─────────────────────────────────────────────────── -->
+<section class="py-14 px-6 border-b border-slate-800" id="public">
   <div class="max-w-5xl mx-auto">
-    <h2 class="text-xl font-bold text-white mb-1 tracking-tight">Admin</h2>
-    <p class="text-sm text-slate-500 mb-8">Unauthenticated — local dev only. No <code class="ic">X-Tenant-ID</code> required.</p>
+    <h2 class="text-xl font-bold text-white mb-1 tracking-tight">Public API</h2>
+    <p class="text-sm text-slate-500 mb-8">Reads are public (global tenants open to all, private tenants require ownership). Writes require login. No <code class="ic">X-Tenant-ID</code> required.</p>
 
     <div class="space-y-8">
 
@@ -251,38 +209,42 @@ curl -s -X POST http://localhost:8080/mcp/message \
         <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-get  shrink-0 mt-0.5">GET</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants</code>
-            <span class="text-[13px] text-slate-500">List all tenant IDs.</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants</code>
+            <span class="text-[13px] text-slate-500">List tenants. Unauthenticated returns global tenants only; logged-in users also see their private tenants.</span>
           </div>
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-post shrink-0 mt-0.5">POST</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants</code>
-            <span class="text-[13px] text-slate-500">Create a tenant. Body: <code class="ic">{"tenant_id":"…","state":{}}</code></span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants</code>
+            <span class="text-[13px] text-slate-500 flex-1">Create a tenant. Body: <code class="ic">{"tenant_id":"…","state":{}}</code></span>
+            <span class="text-[10px] font-semibold text-slate-600 border border-slate-700 rounded px-1.5 py-0.5 shrink-0">auth</span>
           </div>
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-get  shrink-0 mt-0.5">GET</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}</code>
-            <span class="text-[13px] text-slate-500">Get tenant state JSON.</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants/{id}</code>
+            <span class="text-[13px] text-slate-500">Get tenant state. Global tenants open; private tenants require ownership.</span>
           </div>
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-put  shrink-0 mt-0.5">PUT</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/state</code>
-            <span class="text-[13px] text-slate-500">Replace tenant state. Body: <code class="ic">{"state":{}}</code></span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants/{id}/state</code>
+            <span class="text-[13px] text-slate-500 flex-1">Replace tenant state. Body: <code class="ic">{"state":{}}</code></span>
+            <span class="text-[10px] font-semibold text-slate-600 border border-slate-700 rounded px-1.5 py-0.5 shrink-0">auth</span>
           </div>
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-get  shrink-0 mt-0.5">GET</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/settings</code>
-            <span class="text-[13px] text-slate-500">Get tenant settings (e.g. <code class="ic">include_global_tools</code>).</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants/{id}/settings</code>
+            <span class="text-[13px] text-slate-500">Get tenant settings. Same visibility rules as state.</span>
           </div>
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-put  shrink-0 mt-0.5">PATCH</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/settings</code>
-            <span class="text-[13px] text-slate-500">Merge-patch tenant settings. Body: <code class="ic">{"include_global_tools":false}</code></span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants/{id}/settings</code>
+            <span class="text-[13px] text-slate-500 flex-1">Merge-patch tenant settings. Body: any JSON object.</span>
+            <span class="text-[10px] font-semibold text-slate-600 border border-slate-700 rounded px-1.5 py-0.5 shrink-0">auth</span>
           </div>
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-del  shrink-0 mt-0.5">DELETE</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}</code>
-            <span class="text-[13px] text-slate-500">Delete tenant and all its scenarios.</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants/{id}</code>
+            <span class="text-[13px] text-slate-500 flex-1">Delete tenant and all its scenarios.</span>
+            <span class="text-[10px] font-semibold text-slate-600 border border-slate-700 rounded px-1.5 py-0.5 shrink-0">auth</span>
           </div>
         </div>
       </div>
@@ -292,18 +254,20 @@ curl -s -X POST http://localhost:8080/mcp/message \
         <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-get  shrink-0 mt-0.5">GET</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/scenarios</code>
-            <span class="text-[13px] text-slate-500">List all scenarios for a tenant.</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants/{id}/scenarios</code>
+            <span class="text-[13px] text-slate-500">List scenarios. Same visibility rules as state.</span>
           </div>
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-post shrink-0 mt-0.5">POST</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/scenarios</code>
-            <span class="text-[13px] text-slate-500">Add a scenario. Body: <code class="ic">{"keywords":["…"],"response":"…","tool_name":"…","tool_data":{}}</code></span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants/{id}/scenarios</code>
+            <span class="text-[13px] text-slate-500 flex-1">Add a scenario or MCP tool. Body: <code class="ic">{"keywords":["…"],"response":"…","tool_name":"…","tool_data":{}}</code></span>
+            <span class="text-[10px] font-semibold text-slate-600 border border-slate-700 rounded px-1.5 py-0.5 shrink-0">auth</span>
           </div>
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-del  shrink-0 mt-0.5">DELETE</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/scenarios/{sid}</code>
-            <span class="text-[13px] text-slate-500">Delete a scenario by ID.</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants/{id}/scenarios/{sid}</code>
+            <span class="text-[13px] text-slate-500 flex-1">Delete a scenario by ID.</span>
+            <span class="text-[10px] font-semibold text-slate-600 border border-slate-700 rounded px-1.5 py-0.5 shrink-0">auth</span>
           </div>
         </div>
       </div>
@@ -313,13 +277,14 @@ curl -s -X POST http://localhost:8080/mcp/message \
         <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-get  shrink-0 mt-0.5">GET</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/chaos</code>
-            <span class="text-[13px] text-slate-500">Get current chaos profile.</span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants/{id}/chaos</code>
+            <span class="text-[13px] text-slate-500">Get current chaos profile. Same visibility rules as state.</span>
           </div>
           <div class="flex items-start gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
             <span class="badge-post shrink-0 mt-0.5">POST</span>
-            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/admin/tenants/{id}/chaos</code>
-            <span class="text-[13px] text-slate-500">Set profile: <code class="ic">none</code> <code class="ic">rate_limit</code> <code class="ic">server_error</code> <code class="ic">latency</code></span>
+            <code class="font-mono text-[13px] text-slate-200 shrink-0 w-64">/public/tenants/{id}/chaos</code>
+            <span class="text-[13px] text-slate-500 flex-1">Set profile: <code class="ic">none</code> <code class="ic">rate_limit</code> <code class="ic">server_error</code> <code class="ic">latency</code></span>
+            <span class="text-[10px] font-semibold text-slate-600 border border-slate-700 rounded px-1.5 py-0.5 shrink-0">auth</span>
           </div>
         </div>
       </div>
@@ -371,27 +336,28 @@ curl -s -X POST http://localhost:8080/mcp/message \
     const grid = document.getElementById("tenant-grid");
     grid.innerHTML = `<div class="col-span-full text-sm text-slate-500 py-6 px-5 border border-dashed border-slate-700 rounded-xl text-center">Loading tenants…</div>`;
     try {
-      const data    = await fetch("/admin/tenants").then(r => r.json());
+      const data    = await fetch("/public/tenants").then(r => r.json());
       const tenants = data.tenants || [];
       if (!tenants.length) {
-        grid.innerHTML = `<div class="col-span-full text-sm text-slate-500 py-6 px-5 border border-dashed border-slate-700 rounded-xl text-center">No tenants. Create one via <code class="ic">POST /admin/tenants</code>.</div>`;
+        grid.innerHTML = `<div class="col-span-full text-sm text-slate-500 py-6 px-5 border border-dashed border-slate-700 rounded-xl text-center">No tenants. Create one via <code class="ic">POST /public/tenants</code>.</div>`;
         return;
       }
       grid.innerHTML = tenants.map(t => `
         <div class="bg-raised border border-slate-800 rounded-2xl p-5 flex flex-col gap-3.5 hover:border-accent/20 transition-colors">
-          <div class="flex items-center gap-2.5">
-            <div class="w-2.5 h-2.5 rounded-full bg-accent shrink-0" style="box-shadow:0 0 0 4px rgba(16,217,163,0.1)"></div>
-            <span class="font-mono text-[13px] font-semibold text-slate-200 break-all">${t}</span>
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-2.5 h-2.5 rounded-full ${t.is_global ? "bg-slate-500" : "bg-accent"} shrink-0"></div>
+            <span class="font-mono text-[13px] font-semibold text-slate-200 truncate flex-1">${t.id}</span>
+            ${t.is_global ? `<span class="text-[9px] font-mono text-slate-700 shrink-0">global</span>` : ""}
           </div>
           <div class="flex gap-2 flex-wrap">
-            <a href="/admin/tenants/${t}" target="_blank"
+            <a href="/public/tenants/${encodeURIComponent(t.id)}" target="_blank"
                class="text-[11.5px] font-medium text-slate-400 bg-base border border-slate-800 rounded-full px-3 py-1 hover:text-accent hover:border-accent/30 transition-colors">state ↗</a>
-            <a href="/admin/tenants/${t}/scenarios" target="_blank"
+            <a href="/public/tenants/${encodeURIComponent(t.id)}/scenarios" target="_blank"
                class="text-[11.5px] font-medium text-slate-400 bg-base border border-slate-800 rounded-full px-3 py-1 hover:text-accent hover:border-accent/30 transition-colors">scenarios ↗</a>
-            <a href="/admin/tenants/${t}/chaos" target="_blank"
+            <a href="/public/tenants/${encodeURIComponent(t.id)}/chaos" target="_blank"
                class="text-[11.5px] font-medium text-slate-400 bg-base border border-slate-800 rounded-full px-3 py-1 hover:text-accent hover:border-accent/30 transition-colors">chaos ↗</a>
           </div>
-          <a href="/playground?tenant=${encodeURIComponent(t)}"
+          <a href="/playground?tenant=${encodeURIComponent(t.id)}"
             class="mt-auto bg-accent/10 text-accent border border-accent/20 rounded-full py-2 text-[13px] font-semibold hover:bg-accent/20 transition-colors text-center">
             Try in playground →
           </a>

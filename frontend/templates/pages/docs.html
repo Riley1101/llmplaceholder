@@ -12,7 +12,6 @@
       <a href="#mcp-tools"         class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">MCP Tools</a>
       <a href="#state"             class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">Tenant State</a>
       <a href="#chaos"             class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">Chaos Testing</a>
-      <a href="#global-scenarios"  class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">Global Scenarios</a>
       <a href="#api-tokens"        class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">API Tokens</a>
       <a href="#playground"        class="doc-link px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors">Playground</a>
       <div class="my-3 border-t border-slate-800"></div>
@@ -69,7 +68,7 @@
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
           <p class="text-[13px] font-semibold text-white mb-2">Creating a tenant</p>
           <p class="text-[13px] text-slate-400 mb-4">Use the Playground UI or the API. Tenant IDs can be any string.</p>
-          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/admin/tenants \
+          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/public/tenants \
   -H "Content-Type: application/json" \
   -d '{"tenant_id": "my-app"}'</pre>
         </div>
@@ -134,7 +133,7 @@ curl -X POST .../mcp/message -H "X-Tenant-ID: my-app" ...</pre>
 
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
           <p class="text-[13px] font-semibold text-white mb-3">Adding a scenario via API</p>
-          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/admin/tenants/my-app/scenarios \
+          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/public/tenants/my-app/scenarios \
   -H "Content-Type: application/json" \
   -d '{
     "keywords": ["invoice", "billing"],
@@ -158,17 +157,17 @@ curl -X POST .../mcp/message -H "X-Tenant-ID: my-app" ...</pre>
         <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
           <div class="flex items-start gap-4 px-5 py-3.5">
             <code class="font-mono text-[13px] text-accent shrink-0 w-32">tools/list</code>
-            <span class="text-[13px] text-slate-500">Returns all tools for the tenant. Tenant tools first, then global tools (unless disabled in settings).</span>
+            <span class="text-[13px] text-slate-500">Returns all tools defined in the tenant's scenarios.</span>
           </div>
           <div class="flex items-start gap-4 px-5 py-3.5">
             <code class="font-mono text-[13px] text-accent shrink-0 w-32">tools/call</code>
-            <span class="text-[13px] text-slate-500">Matches by tool name. Returns the configured mock JSON response.</span>
+            <span class="text-[13px] text-slate-500">Matches by tool name. Returns the mock <code class="ic">tool_data</code> from the matching tenant scenario.</span>
           </div>
         </div>
 
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
           <p class="text-[13px] font-semibold text-white mb-3">Adding a tool via API</p>
-          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/admin/tenants/my-app/scenarios \
+          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/public/tenants/my-app/scenarios \
   -H "Content-Type: application/json" \
   -d '{
     "keywords": [],
@@ -191,63 +190,41 @@ curl -X POST .../mcp/message -H "X-Tenant-ID: my-app" ...</pre>
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_invoice_list"}}'</pre>
         </div>
 
-        <div class="bg-surface border border-slate-800 rounded-xl p-5">
-          <p class="text-[13px] font-semibold text-white mb-1">Global tools toggle</p>
-          <p class="text-[13px] text-slate-400">By default, global tools appear alongside tenant tools in <code class="ic">tools/list</code>. Disable it in Playground → Tenants → MCP Tools → Settings.</p>
-        </div>
       </div>
     </section>
 
     <!-- Tenant State -->
     <section id="state">
       <h2 class="text-xl font-bold text-white tracking-tight mb-1">Tenant State</h2>
-      <p class="text-[13px] text-slate-500 mb-6">A per-tenant JSON document. Use it to inject custom data into built-in scenarios without writing new ones.</p>
+      <p class="text-[13px] text-slate-500 mb-6">A per-tenant JSON document. Store domain data here — your seeded tenants come pre-populated with realistic state for their domain.</p>
 
       <div class="space-y-4">
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
-          <p class="text-[13px] font-semibold text-white mb-1">How it works</p>
-          <p class="text-[13px] text-slate-400 mb-4">Each built-in scenario has a <code class="ic">state_key</code>. When a tool is called, the server checks <code class="ic">state[state_key]</code>. If found, that value overrides the default mock payload.</p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px] font-mono">
-            <div>
-              <p class="text-slate-600 mb-1.5">Without state override:</p>
-              <pre class="bg-base rounded-lg p-3 text-slate-400">{"mrr_usd": 128400,
- "churn_rate_pct": 2.1}</pre>
-            </div>
-            <div>
-              <p class="text-slate-600 mb-1.5">With state override:</p>
-              <pre class="bg-base rounded-lg p-3 text-slate-400">{"mrr_usd": 999,
- "churn_rate_pct": 0.1}</pre>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-surface border border-slate-800 rounded-xl p-5">
-          <p class="text-[13px] font-semibold text-white mb-3">Setting state</p>
-          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X PUT http://localhost:8080/admin/tenants/my-app/state \
+          <p class="text-[13px] font-semibold text-white mb-3">Setting state via API</p>
+          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X PUT http://localhost:8080/public/tenants/my-app/state \
   -H "Content-Type: application/json" \
   -d '{
     "state": {
-      "growth_metrics": {
-        "mrr_usd": 999,
-        "churn_rate_pct": 0.1
-      }
+      "mrr_usd": 999,
+      "churn_rate_pct": 0.1
     }
   }'</pre>
-          <p class="text-[12px] text-slate-600 mt-3">Or use the State tab in the Playground — it has a live JSON editor.</p>
+          <p class="text-[12px] text-slate-600 mt-3">Or use the State tab in Playground — it has a live JSON editor.</p>
         </div>
 
-        <div class="bg-surface border border-slate-800 rounded-xl p-5">
-          <p class="text-[13px] font-semibold text-white mb-2">Common state keys</p>
-          <div class="flex flex-wrap gap-2">
-            <code class="ic">growth_metrics</code>
-            <code class="ic">top_churned_accounts</code>
-            <code class="ic">incidents</code>
-            <code class="ic">deployments</code>
-            <code class="ic">inventory</code>
-            <code class="ic">security_events</code>
-            <code class="ic">matters</code>
+        <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
+          <div class="px-5 py-3.5 flex items-start gap-3">
+            <div class="w-2 h-2 rounded-full bg-accent mt-1.5 shrink-0"></div>
+            <p class="text-[13px] text-slate-400">State is scoped per tenant — editing one tenant's state has no effect on others.</p>
           </div>
-          <p class="text-[12px] text-slate-600 mt-3">Full list visible in Playground → Tenants → Scenarios — each built-in entry shows its state key.</p>
+          <div class="px-5 py-3.5 flex items-start gap-3">
+            <div class="w-2 h-2 rounded-full bg-accent mt-1.5 shrink-0"></div>
+            <p class="text-[13px] text-slate-400">Persisted in SQLite. Survives server restarts.</p>
+          </div>
+          <div class="px-5 py-3.5 flex items-start gap-3">
+            <div class="w-2 h-2 rounded-full bg-accent mt-1.5 shrink-0"></div>
+            <p class="text-[13px] text-slate-400">Seeded tenants (e.g. <code class="ic">tenant_saas_growth</code>) come with realistic state pre-loaded for their domain.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -290,46 +267,14 @@ curl -X POST .../mcp/message -H "X-Tenant-ID: my-app" ...</pre>
 
       <div class="bg-surface border border-slate-800 rounded-xl p-5">
         <p class="text-[13px] font-semibold text-white mb-3">Setting chaos via API</p>
-        <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/admin/tenants/my-app/chaos \
+        <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/public/tenants/my-app/chaos \
   -H "Content-Type: application/json" \
   -d '{"profile": "rate_limit"}'
 
 # Reset to normal
-curl -X POST http://localhost:8080/admin/tenants/my-app/chaos \
+curl -X POST http://localhost:8080/public/tenants/my-app/chaos \
   -H "Content-Type: application/json" \
   -d '{"profile": "none"}'</pre>
-      </div>
-    </section>
-
-    <!-- Global Scenarios -->
-    <section id="global-scenarios">
-      <h2 class="text-xl font-bold text-white tracking-tight mb-1">Global Scenarios</h2>
-      <p class="text-[13px] text-slate-500 mb-6">Shared scenarios visible across all tenants. Useful for common patterns you want everywhere.</p>
-
-      <div class="space-y-4">
-        <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
-          <div class="px-5 py-3.5 flex items-start gap-3">
-            <div class="w-2 h-2 rounded-full bg-accent mt-1.5 shrink-0"></div>
-            <p class="text-[13px] text-slate-400">Tenant scenarios are checked first. Global scenarios are a fallback.</p>
-          </div>
-          <div class="px-5 py-3.5 flex items-start gap-3">
-            <div class="w-2 h-2 rounded-full bg-accent mt-1.5 shrink-0"></div>
-            <p class="text-[13px] text-slate-400">Manage them in Playground → Global Scenarios panel (login required).</p>
-          </div>
-          <div class="px-5 py-3.5 flex items-start gap-3">
-            <div class="w-2 h-2 rounded-full bg-accent mt-1.5 shrink-0"></div>
-            <p class="text-[13px] text-slate-400">Global scenarios are in-memory only — they reset on server restart.</p>
-          </div>
-        </div>
-
-        <div class="bg-surface border border-slate-800 rounded-xl p-5">
-          <p class="text-[13px] font-semibold text-white mb-3">Adding a global scenario via UI</p>
-          <ol class="space-y-1.5 text-[13px] text-slate-400 list-decimal list-inside">
-            <li>Open <a href="/playground" class="text-accent hover:underline">Playground</a></li>
-            <li>Find the "Global Scenarios" panel</li>
-            <li>Enter keywords and a response, then click Add</li>
-          </ol>
-        </div>
       </div>
     </section>
 
@@ -351,7 +296,7 @@ curl -X POST http://localhost:8080/admin/tenants/my-app/chaos \
 
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
           <p class="text-[13px] font-semibold text-white mb-3">Using a token</p>
-          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/admin/tenants \
+          <pre class="bg-base rounded-lg p-4 text-[12px] font-mono text-slate-300 overflow-x-auto">curl -X POST http://localhost:8080/public/tenants \
   -H "Authorization: Bearer &lt;your-token&gt;" \
   -H "Content-Type: application/json" \
   -d '{"tenant_id": "ci-test-run-42"}'</pre>
@@ -374,8 +319,8 @@ curl -X POST http://localhost:8080/admin/tenants/my-app/chaos \
           <p class="text-[13px] text-slate-400">Create, delete, and configure tenants. Each tenant has 4 tabs: State, Scenarios, MCP Tools, and Chaos.</p>
         </div>
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
-          <p class="text-[13px] font-semibold text-white mb-1">Browse built-in scenarios</p>
-          <p class="text-[13px] text-slate-400">Each tenant comes with pre-built domain scenarios (ecommerce, SaaS, DevOps, etc.). Browse and test them directly.</p>
+          <p class="text-[13px] font-semibold text-white mb-1">Tenant scenarios</p>
+          <p class="text-[13px] text-slate-400">Each seeded tenant comes with domain scenarios (ecommerce, SaaS, DevOps, etc.) scoped to that tenant. Browse them in the Scenarios tab.</p>
         </div>
         <div class="bg-surface border border-slate-800 rounded-xl p-5">
           <p class="text-[13px] font-semibold text-white mb-1">Live JSON state editor</p>

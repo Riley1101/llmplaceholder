@@ -225,7 +225,11 @@ func HandleUIGetTenantDetail(dbManager *db.TenantDBManager) http.HandlerFunc {
 // GET /ui/tenants/{id}/state
 func HandleUIGetStateTab(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		renderPartial(w, "tenant-state-tab", buildDetailData(r.PathValue("id"), dbManager))
+		tenantID := r.PathValue("id")
+		if _, ok := resolveAccess(w, r, dbManager, tenantID, false); !ok {
+			return
+		}
+		renderPartial(w, "tenant-state-tab", buildDetailData(tenantID, dbManager))
 	}
 }
 
@@ -233,6 +237,9 @@ func HandleUIGetStateTab(dbManager *db.TenantDBManager) http.HandlerFunc {
 func HandleUISaveState(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
+		if _, ok := resolveAccess(w, r, dbManager, tenantID, true); !ok {
+			return
+		}
 		raw := r.FormValue("state")
 		var parsed map[string]interface{}
 		if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
