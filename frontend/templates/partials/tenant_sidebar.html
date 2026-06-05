@@ -1,13 +1,18 @@
 {{define "tenant-sidebar"}}
 {{if .Tenants}}
   {{range .Tenants}}
-  <div class="tenant-item" data-tid="{{.}}"
-       hx-get="/ui/tenants/{{. | pathEscape}}"
+  <div class="tenant-item" data-tid="{{.ID}}"
+       hx-get="/ui/tenants/{{.ID | pathEscape}}"
        hx-target="#tenant-detail"
        hx-swap="innerHTML"
        onclick="setActiveTenant(this)">
+    {{if .IsGlobal}}
+    <span class="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0" title="Global tenant"></span>
+    {{else}}
     <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span>
-    <span class="truncate">{{.}}</span>
+    {{end}}
+    <span class="truncate flex-1">{{.ID}}</span>
+    {{if .IsGlobal}}<span class="text-[9px] font-mono text-slate-700 shrink-0">global</span>{{end}}
   </div>
   {{end}}
 {{else}}

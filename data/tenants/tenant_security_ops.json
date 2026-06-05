@@ -1,84 +1,76 @@
 {
-  "org": "ShieldLayer Security",
-  "security_events": [
-    {
-      "id": "EVT-20260602-8821",
-      "type": "brute_force",
-      "severity": "HIGH",
-      "source_ip": "185.234.219.11",
-      "source_geo": "RU",
-      "target": "vpn.shieldlayer.io",
-      "attempts": 1247,
-      "status": "BLOCKED",
-      "timestamp": "2026-06-02T12:34:00Z",
-      "mitre_technique": "T1110.001"
+  "state": {
+    "org": "ShieldLayer Security",
+    "security_events": [
+      {"id": "EVT-20260602-8821", "type": "brute_force", "severity": "HIGH", "source_ip": "185.234.219.11", "source_geo": "RU", "target": "vpn.shieldlayer.io", "attempts": 1247, "status": "BLOCKED", "timestamp": "2026-06-02T12:34:00Z", "mitre_technique": "T1110.001"},
+      {"id": "EVT-20260602-8810", "type": "privilege_escalation", "severity": "CRITICAL", "user": "svc-etl-worker", "host": "prod-etl-03", "process": "sudo bash -i", "status": "INVESTIGATING", "timestamp": "2026-06-02T11:02:00Z", "mitre_technique": "T1548.003", "assigned_to": "K. Patel"},
+      {"id": "EVT-20260601-8799", "type": "data_exfil_attempt", "severity": "HIGH", "user": "j.morrison", "destination": "personal-dropbox.com", "bytes_attempted": 2400000000, "status": "BLOCKED", "timestamp": "2026-06-01T23:41:00Z", "mitre_technique": "T1567.002"},
+      {"id": "EVT-20260601-8790", "type": "lateral_movement", "severity": "HIGH", "source_host": "dev-workstation-22", "target_host": "prod-db-01", "protocol": "RDP", "status": "BLOCKED", "timestamp": "2026-06-01T18:21:00Z", "mitre_technique": "T1021.001"}
+    ],
+    "vulnerability_summary": {
+      "critical": 3,
+      "high": 17,
+      "medium": 84,
+      "low": 221,
+      "last_scan": "2026-06-02T06:00:00Z",
+      "assets_scanned": 412,
+      "top_critical_cve": [
+        {"cve": "CVE-2026-1882", "asset": "nginx/1.24.0 (prod-edge-01)", "cvss": 9.8, "patch_available": true},
+        {"cve": "CVE-2025-44228", "asset": "log4j 2.14 (prod-etl-03)", "cvss": 10.0, "patch_available": true},
+        {"cve": "CVE-2026-3041", "asset": "OpenSSH 8.6 (bastion-01)", "cvss": 9.1, "patch_available": false}
+      ]
     },
-    {
-      "id": "EVT-20260602-8810",
-      "type": "privilege_escalation",
-      "severity": "CRITICAL",
-      "user": "svc-etl-worker",
-      "host": "prod-etl-03",
-      "process": "sudo bash -i",
-      "status": "INVESTIGATING",
-      "timestamp": "2026-06-02T11:02:00Z",
-      "mitre_technique": "T1548.003",
-      "assigned_to": "K. Patel"
-    },
-    {
-      "id": "EVT-20260601-8799",
-      "type": "data_exfil_attempt",
-      "severity": "HIGH",
-      "user": "j.morrison",
-      "destination": "personal-dropbox.com",
-      "bytes_attempted": 2400000000,
-      "status": "BLOCKED",
-      "timestamp": "2026-06-01T23:41:00Z",
-      "mitre_technique": "T1567.002"
-    },
-    {
-      "id": "EVT-20260601-8790",
-      "type": "lateral_movement",
-      "severity": "HIGH",
-      "source_host": "dev-workstation-22",
-      "target_host": "prod-db-01",
-      "protocol": "RDP",
-      "status": "BLOCKED",
-      "timestamp": "2026-06-01T18:21:00Z",
-      "mitre_technique": "T1021.001"
-    }
-  ],
-  "vulnerability_summary": {
-    "critical": 3,
-    "high": 17,
-    "medium": 84,
-    "low": 221,
-    "last_scan": "2026-06-02T06:00:00Z",
-    "assets_scanned": 412,
-    "top_critical_cve": [
-      {"cve": "CVE-2026-1882", "asset": "nginx/1.24.0 (prod-edge-01)", "cvss": 9.8, "patch_available": true},
-      {"cve": "CVE-2025-44228", "asset": "log4j 2.14 (prod-etl-03)", "cvss": 10.0, "patch_available": true},
-      {"cve": "CVE-2026-3041", "asset": "OpenSSH 8.6 (bastion-01)", "cvss": 9.1, "patch_available": false}
+    "active_investigations": [
+      {"case": "CSIRT-2026-019", "type": "Insider Threat", "analyst": "K. Patel", "status": "ACTIVE", "opened": "2026-06-01", "summary": "Anomalous data access pattern by j.morrison across 3 data stores. HR notified.", "iocs": ["185.234.219.11", "j.morrison", "svc-etl-worker"]},
+      {"case": "CSIRT-2026-018", "type": "Ransomware Precursor Activity", "analyst": "L. Torres", "status": "CONTAINED", "opened": "2026-05-29", "summary": "Cobalt Strike beacon found on dev-workstation-22. Host isolated.", "iocs": ["dev-workstation-22", "185.220.101.47"]}
     ]
   },
-  "active_investigations": [
+  "scenarios": [
     {
-      "case": "CSIRT-2026-019",
-      "type": "Insider Threat",
-      "analyst": "K. Patel",
-      "status": "ACTIVE",
-      "opened": "2026-06-01",
-      "summary": "Anomalous data access pattern by j.morrison across 3 data stores. HR notified.",
-      "iocs": ["185.234.219.11", "j.morrison", "svc-etl-worker"]
+      "id": "seed-security-events",
+      "keywords": ["threat", "breach", "alert", "siem", "intrusion", "malware", "ransomware", "brute force", "ioc", "mitre"],
+      "response": "**CRITICAL active alert**: EVT-20260602-8810 — privilege escalation by `svc-etl-worker` on prod-etl-03 (`sudo bash -i`), under investigation by K. Patel (CSIRT-2026-019). Also active: brute-force against vpn.shieldlayer.io from 185.234.219.11 (RU, 1,247 attempts) — BLOCKED. Data exfil attempt by j.morrison (2.4 GB to Dropbox) was also blocked. Recommend isolating prod-etl-03 immediately.",
+      "tool_name": "get_security_events",
+      "tool_data": {
+        "critical_events": 1,
+        "high_events": 3,
+        "active_investigations": 1,
+        "events": [
+          {"id": "EVT-20260602-8810", "type": "privilege_escalation", "severity": "CRITICAL", "host": "prod-etl-03", "status": "INVESTIGATING"},
+          {"id": "EVT-20260602-8821", "type": "brute_force", "severity": "HIGH", "status": "BLOCKED"},
+          {"id": "EVT-20260601-8799", "type": "data_exfil_attempt", "severity": "HIGH", "status": "BLOCKED"}
+        ]
+      }
     },
     {
-      "case": "CSIRT-2026-018",
-      "type": "Ransomware Precursor Activity",
-      "analyst": "L. Torres",
-      "status": "CONTAINED",
-      "opened": "2026-05-29",
-      "summary": "Cobalt Strike beacon found on dev-workstation-22. Host isolated. No lateral spread confirmed.",
-      "iocs": ["dev-workstation-22", "185.220.101.47"]
+      "id": "seed-security-vulns",
+      "keywords": ["vulnerability", "cve", "patch", "cvss", "scan", "remediation", "log4j", "openssl", "nginx"],
+      "response": "Vulnerability scan (412 assets, 2026-06-02 06:00 UTC): **3 critical CVEs** require immediate attention. **CVE-2025-44228** (log4j 2.14, CVSS 10.0) on prod-etl-03 — patch available, same host as active CSIRT-2026-019. **CVE-2026-1882** (nginx/1.24.0, CVSS 9.8) on prod-edge-01 — patch available. **CVE-2026-3041** (OpenSSH 8.6 on bastion-01, CVSS 9.1) — no patch yet, apply mitigation controls.",
+      "tool_name": "get_vulnerability_report",
+      "tool_data": {
+        "critical": 3,
+        "high": 17,
+        "patch_available": 2,
+        "top_cves": [
+          {"cve": "CVE-2025-44228", "cvss": 10.0, "asset": "prod-etl-03", "patch_available": true},
+          {"cve": "CVE-2026-1882",  "cvss": 9.8,  "asset": "prod-edge-01", "patch_available": true},
+          {"cve": "CVE-2026-3041",  "cvss": 9.1,  "asset": "bastion-01",   "patch_available": false}
+        ]
+      }
+    },
+    {
+      "id": "seed-security-investigations",
+      "keywords": ["investigation", "csirt", "insider threat", "case", "analyst", "containment", "forensics"],
+      "response": "2 active cases. **CSIRT-2026-019** (Insider Threat, K. Patel): j.morrison anomalous data access across 3 stores, HR notified — ACTIVE. **CSIRT-2026-018** (Ransomware Precursor, L. Torres): Cobalt Strike beacon on dev-workstation-22, host isolated — CONTAINED. Recommend patching log4j on prod-etl-03 as part of CSIRT-2026-019 remediation.",
+      "tool_name": "get_investigations",
+      "tool_data": {
+        "active": 1,
+        "contained": 1,
+        "cases": [
+          {"case": "CSIRT-2026-019", "type": "Insider Threat", "status": "ACTIVE", "analyst": "K. Patel"},
+          {"case": "CSIRT-2026-018", "type": "Ransomware Precursor", "status": "CONTAINED", "analyst": "L. Torres"}
+        ]
+      }
     }
   ]
 }

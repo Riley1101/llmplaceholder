@@ -1,66 +1,114 @@
 {
-  "firm": "Hartwell & Crane LLP",
-  "matters": [
-    {
-      "matter_id": "M-2026-0441",
-      "client": "Orion Industries",
-      "type": "M&A Due Diligence",
-      "status": "ACTIVE",
-      "partner": "Diana Hartwell",
-      "associates": ["R. Voss", "S. Patel"],
-      "hours_billed": 142.5,
-      "budget_hours": 200,
-      "fees_invoiced_usd": 98175.00,
-      "budget_usd": 138000.00,
-      "next_milestone": "Final report delivery — 2026-06-15"
+  "state": {
+    "firm": "Hartwell & Crane LLP",
+    "matters": [
+      {
+        "matter_id": "M-2026-0441",
+        "client": "Orion Industries",
+        "type": "M&A Due Diligence",
+        "status": "ACTIVE",
+        "partner": "Diana Hartwell",
+        "associates": ["R. Voss", "S. Patel"],
+        "hours_billed": 142.5,
+        "budget_hours": 200,
+        "fees_invoiced_usd": 98175.00,
+        "budget_usd": 138000.00,
+        "next_milestone": "Final report delivery — 2026-06-15"
+      },
+      {
+        "matter_id": "M-2026-0388",
+        "client": "Velocity Pharma",
+        "type": "Patent Licensing",
+        "status": "ACTIVE",
+        "partner": "Marcus Crane",
+        "associates": ["T. Liu"],
+        "hours_billed": 89.0,
+        "budget_hours": 120,
+        "fees_invoiced_usd": 61310.00,
+        "budget_usd": 82800.00,
+        "next_milestone": "License agreement draft — 2026-06-08 (AT RISK)"
+      },
+      {
+        "matter_id": "M-2026-0301",
+        "client": "Beacon Real Estate",
+        "type": "Commercial Lease Negotiation",
+        "status": "CLOSING",
+        "partner": "Sara Kim",
+        "hours_billed": 56.0,
+        "budget_hours": 60,
+        "fees_invoiced_usd": 38640.00,
+        "budget_usd": 41400.00
+      },
+      {
+        "matter_id": "M-2026-0272",
+        "client": "Thornfield Capital",
+        "type": "Fund Formation",
+        "status": "ACTIVE",
+        "partner": "Diana Hartwell",
+        "hours_billed": 208.0,
+        "budget_hours": 250,
+        "fees_invoiced_usd": 143520.00,
+        "budget_usd": 172500.00
+      }
+    ],
+    "billing_summary": {
+      "wip_unbilled_usd": 187400.00,
+      "invoiced_mtd_usd": 342000.00,
+      "collected_mtd_usd": 298000.00,
+      "outstanding_ar_usd": 441000.00,
+      "realization_rate_pct": 87,
+      "utilization_rate_pct": 74
     },
-    {
-      "matter_id": "M-2026-0388",
-      "client": "Velocity Pharma",
-      "type": "Patent Licensing",
-      "status": "ACTIVE",
-      "partner": "Marcus Crane",
-      "associates": ["T. Liu"],
-      "hours_billed": 89.0,
-      "budget_hours": 120,
-      "fees_invoiced_usd": 61310.00,
-      "budget_usd": 82800.00,
-      "next_milestone": "License agreement draft — 2026-06-08 (AT RISK)"
-    },
-    {
-      "matter_id": "M-2026-0301",
-      "client": "Beacon Real Estate",
-      "type": "Commercial Lease Negotiation",
-      "status": "CLOSING",
-      "partner": "Sara Kim",
-      "hours_billed": 56.0,
-      "budget_hours": 60,
-      "fees_invoiced_usd": 38640.00,
-      "budget_usd": 41400.00
-    },
-    {
-      "matter_id": "M-2026-0272",
-      "client": "Thornfield Capital",
-      "type": "Fund Formation",
-      "status": "ACTIVE",
-      "partner": "Diana Hartwell",
-      "hours_billed": 208.0,
-      "budget_hours": 250,
-      "fees_invoiced_usd": 143520.00,
-      "budget_usd": 172500.00
-    }
-  ],
-  "billing_summary": {
-    "wip_unbilled_usd": 187400.00,
-    "invoiced_mtd_usd": 342000.00,
-    "collected_mtd_usd": 298000.00,
-    "outstanding_ar_usd": 441000.00,
-    "realization_rate_pct": 87,
-    "utilization_rate_pct": 74
+    "deadlines": [
+      {"matter_id": "M-2026-0441", "description": "Due diligence report delivery to Orion board", "due_date": "2026-06-15", "status": "ON_TRACK"},
+      {"matter_id": "M-2026-0388", "description": "License agreement draft to Velocity Pharma counsel", "due_date": "2026-06-08", "status": "AT_RISK"},
+      {"matter_id": "M-2026-0272", "description": "LP subscription docs — final execution", "due_date": "2026-06-20", "status": "ON_TRACK"}
+    ]
   },
-  "deadlines": [
-    {"matter_id": "M-2026-0441", "description": "Due diligence report delivery to Orion board", "due_date": "2026-06-15", "status": "ON_TRACK"},
-    {"matter_id": "M-2026-0388", "description": "License agreement draft to Velocity Pharma counsel", "due_date": "2026-06-08", "status": "AT_RISK"},
-    {"matter_id": "M-2026-0272", "description": "LP subscription docs — final execution", "due_date": "2026-06-20", "status": "ON_TRACK"}
+  "scenarios": [
+    {
+      "id": "seed-legal-matters",
+      "keywords": ["matter", "contract", "litigation", "deposition", "brief", "counsel", "due diligence", "m&a", "patent"],
+      "response": "4 active matters. **M-2026-0388** (Velocity Pharma Patent Licensing) is **AT RISK** — the license agreement draft is due June 8th with 89 of 120 budgeted hours consumed. Partner Marcus Crane is assigned. **M-2026-0441** (Orion M&A Due Diligence) is on track for June 15th delivery at 71% of budget hours. Recommend escalating the Velocity Pharma deadline immediately.",
+      "tool_name": "get_legal_matters",
+      "tool_data": {
+        "active_matters": 4,
+        "at_risk": 1,
+        "matters": [
+          {"id": "M-2026-0388", "client": "Velocity Pharma", "status": "AT_RISK", "hours_pct": 74, "deadline": "2026-06-08"},
+          {"id": "M-2026-0441", "client": "Orion Industries", "status": "ON_TRACK", "hours_pct": 71, "deadline": "2026-06-15"}
+        ]
+      }
+    },
+    {
+      "id": "seed-legal-billing",
+      "keywords": ["hours billed", "wip", "realization", "utilization", "accounts receivable", "collections", "retainer"],
+      "response": "Firm billing summary: **$187,400 WIP** unbilled, **$342,000** invoiced MTD, **$298,000** collected (87% realization). Outstanding AR sits at **$441,000**. Utilization rate is 74%. Consider following up on the $44K gap between invoiced and collected — Thornfield Capital and Beacon Real Estate have open balances.",
+      "tool_name": "get_billing_summary",
+      "tool_data": {
+        "wip_usd": 187400,
+        "invoiced_mtd_usd": 342000,
+        "collected_mtd_usd": 298000,
+        "outstanding_ar_usd": 441000,
+        "realization_pct": 87,
+        "utilization_pct": 74
+      }
+    },
+    {
+      "id": "seed-legal-deadlines",
+      "keywords": ["deadline", "due date", "milestone", "filing", "delivery", "closing"],
+      "response": "3 upcoming deadlines. **URGENT — June 8**: M-2026-0388 (Velocity Pharma license draft) is AT RISK with 89/120 hours consumed. **June 15**: M-2026-0441 (Orion M&A report) is on track. **June 20**: M-2026-0272 (Thornfield LP subscription docs) is on track. Recommend immediate partner review of the Velocity Pharma matter.",
+      "tool_name": "get_matter_deadlines",
+      "tool_data": {
+        "overdue": 0,
+        "at_risk": 1,
+        "on_track": 2,
+        "deadlines": [
+          {"matter_id": "M-2026-0388", "due_date": "2026-06-08", "status": "AT_RISK"},
+          {"matter_id": "M-2026-0441", "due_date": "2026-06-15", "status": "ON_TRACK"},
+          {"matter_id": "M-2026-0272", "due_date": "2026-06-20", "status": "ON_TRACK"}
+        ]
+      }
+    }
   ]
 }

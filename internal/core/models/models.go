@@ -1,6 +1,9 @@
 package models
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Protocol identifies the origin signature of the incoming client
 type Protocol string
@@ -72,4 +75,28 @@ type JSONRPCResponse struct {
 	ID      interface{} `json:"id"`
 	Result  interface{} `json:"result,omitempty"`
 	Error   interface{} `json:"error,omitempty"`
+}
+
+// TenantMeta carries tenant identity plus ownership flag for UI rendering.
+type TenantMeta struct {
+	ID       string `json:"id"`
+	IsGlobal bool   `json:"is_global"`
+}
+
+// User is an authenticated user identified via GitHub OAuth.
+type User struct {
+	ID        string
+	GithubID  int64
+	Login     string
+	Name      string
+	Email     string
+	AvatarURL string
+}
+
+// APIToken represents a user-generated bearer token for programmatic API access.
+type APIToken struct {
+	ID          string
+	Name        string
+	CreatedAt   time.Time
+	LastUsedAt  *time.Time
 }

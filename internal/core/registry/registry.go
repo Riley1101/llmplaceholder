@@ -6,84 +6,40 @@ import (
 	"llmplaceholder/internal/core/models"
 )
 
-// MatchIntent scans the user prompt against the global registry
-func MatchIntent(userPrompt string) models.MockScenario {
-	cleaned := strings.ToLower(userPrompt)
+const fallbackResponse = "No matching scenario found for this tenant. Add scenarios in the tenant dashboard."
 
-	for _, scenario := range GlobalRegistry {
-		for _, kw := range scenario.Keywords {
-			if strings.Contains(cleaned, kw) {
-				return scenario
-			}
-		}
-	}
-
-	return getFallback()
-}
-
-// MatchIntentForTenant checks tenant-specific scenarios first, then falls back to global registry
-func MatchIntentForTenant(prompt string, tenantScenarios []models.TenantScenario) models.MockScenario {
+// MatchIntent finds the first tenant scenario whose keywords match the prompt.
+func MatchIntent(prompt string, tenantScenarios []models.TenantScenario) models.MockScenario {
 	cleaned := strings.ToLower(prompt)
 	for _, s := range tenantScenarios {
 		for _, kw := range s.Keywords {
 			if strings.Contains(cleaned, strings.ToLower(kw)) {
-				return models.MockScenario{
-					ID:           s.ID,
-					Keywords:     s.Keywords,
-					FullResponse: s.Response,
-					MCPToolName:  s.ToolName,
-					MCPToolData:  s.ToolData,
-				}
+				return toMockScenario(s)
 			}
 		}
 	}
-	return MatchIntent(prompt)
-}
-
-// MatchTool searches the global registry for an exact MCP tool target
-func MatchTool(toolName string) models.MockScenario {
-	for _, scenario := range GlobalRegistry {
-		if scenario.MCPToolName == toolName {
-			return scenario
-		}
+	return models.MockScenario{
+		FullResponse: fallbackResponse,
+		MCPToolName:  "unknown",
+		MCPToolData:  map[string]string{"error": "no matching scenario"},
 	}
-
-	return getFallback()
 }
 
-// MatchToolForTenant checks tenant-specific scenarios first, then falls back to global registry
-func MatchToolForTenant(toolName string, tenantScenarios []models.TenantScenario) models.MockScenario {
+// MatchTool finds the first tenant scenario with a matching tool name.
+func MatchTool(toolName string, tenantScenarios []models.TenantScenario) models.MockScenario {
 	for _, s := range tenantScenarios {
 		if s.ToolName == toolName {
-			return models.MockScenario{
-				ID:           s.ID,
-				Keywords:     s.Keywords,
-				FullResponse: s.Response,
-				MCPToolName:  s.ToolName,
-				MCPToolData:  s.ToolData,
-			}
+			return toMockScenario(s)
 		}
 	}
-	return MatchTool(toolName)
-}
-
-// ListTools returns one entry per unique non-fallback MCP tool in the global registry
-func ListTools() []map[string]string {
-	seen := map[string]bool{}
-	var tools []map[string]string
-	for _, s := range GlobalRegistry {
-		if s.MCPToolName == "" || s.MCPToolName == "unknown" || seen[s.MCPToolName] {
-			continue
-		}
-		seen[s.MCPToolName] = true
-		tools = append(tools, map[string]string{"name": s.MCPToolName})
+	return models.MockScenario{
+		MCPToolName: toolName,
+		MCPToolData: map[string]string{"error": "tool not found in tenant scenario registry"},
 	}
-	return tools
 }
 
-// ListToolsForTenant merges tenant-specific tools with global tools.
-// Set includeGlobal=false to return only tenant-defined tools.
-func ListToolsForTenant(tenantScenarios []models.TenantScenario, includeGlobal bool) []map[string]string {
+// ListTools returns one entry per unique MCP tool defined in tenant scenarios.
+func ListTools(tenantScenarios []models.TenantScenario) []map[string]string {
 	seen := map[string]bool{}
 	var tools []map[string]string
 	for _, s := range tenantScenarios {
@@ -91,39 +47,17 @@ func ListToolsForTenant(tenantScenarios []models.TenantScenario, includeGlobal b
 			continue
 		}
 		seen[s.ToolName] = true
-		tools = append(tools, map[string]string{"name": s.ToolName, "source": "tenant"})
-	}
-	if includeGlobal {
-		for _, t := range ListTools() {
-			if !seen[t["name"]] {
-				t["source"] = "global"
-				tools = append(tools, t)
-			}
-		}
+		tools = append(tools, map[string]string{"name": s.ToolName})
 	}
 	return tools
 }
 
-// AddGlobalScenario appends a new scenario to the in-memory GlobalRegistry.
-func AddGlobalScenario(s models.MockScenario) {
-	GlobalRegistry = append(GlobalRegistry, s)
-}
-
-// DeleteGlobalScenario removes a scenario by ID from the in-memory GlobalRegistry.
-func DeleteGlobalScenario(id string) {
-	for i, s := range GlobalRegistry {
-		if s.ID == id {
-			GlobalRegistry = append(GlobalRegistry[:i], GlobalRegistry[i+1:]...)
-			return
-		}
+func toMockScenario(s models.TenantScenario) models.MockScenario {
+	return models.MockScenario{
+		ID:           s.ID,
+		Keywords:     s.Keywords,
+		FullResponse: s.Response,
+		MCPToolName:  s.ToolName,
+		MCPToolData:  s.ToolData,
 	}
-}
-
-func getFallback() models.MockScenario {
-	for _, scenario := range GlobalRegistry {
-		if scenario.ID == "fallback" {
-			return scenario
-		}
-	}
-	return models.MockScenario{}
 }

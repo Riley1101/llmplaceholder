@@ -4,11 +4,16 @@ import (
 	"net/http"
 	"net/url"
 
+	"llmplaceholder/internal/core/models"
 	"llmplaceholder/internal/db"
 )
 
+type pageData struct {
+	User *models.User
+}
+
 type sidebarData struct {
-	Tenants []string
+	Tenants []models.TenantMeta
 }
 
 type panelData struct {
@@ -35,25 +40,36 @@ func HandleIndex() http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		render(w, "index", nil)
+		render(w, "index", pageData{User: UserFromContext(r)})
 	}
 }
 
 func HandleRoutes() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		render(w, "routes", nil)
+		render(w, "routes", pageData{User: UserFromContext(r)})
 	}
 }
 
 func HandlePlayground() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		render(w, "playground", nil)
+		render(w, "playground", pageData{User: UserFromContext(r)})
+	}
+}
+
+func HandleDocs() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		render(w, "docs", pageData{User: UserFromContext(r)})
 	}
 }
 
 func HandleTenantSidebar(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tenants, err := dbManager.ListTenants()
+		user := UserFromContext(r)
+		if user == nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		tenants, err := dbManager.ListTenantsForUser(user.ID)
 		if err != nil {
 			http.Error(w, "failed to load tenants", http.StatusInternalServerError)
 			return

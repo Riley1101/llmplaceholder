@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 var (
@@ -23,6 +24,13 @@ func LoadTemplates(dir string) error {
 			return ""
 		},
 		"add1": func(i int) int { return i + 1 },
+		"formatTime":    func(t time.Time) string { return t.Format("Jan 2, 2006") },
+		"formatTimePtr": func(t *time.Time) string {
+			if t == nil {
+				return ""
+			}
+			return t.Format("Jan 2, 2006")
+		},
 	}
 
 	// base = layout + partials; cloned for each page

@@ -1,88 +1,136 @@
 {
-  "org": "Nexus Platform Inc.",
-  "deployments": [
+  "state": {
+    "org": "Nexus Platform Inc.",
+    "deployments": [
+      {
+        "service": "api-gateway",
+        "version": "v2.4.1",
+        "status": "healthy",
+        "replicas": 5,
+        "region": "us-east-1",
+        "deployed_at": "2026-06-02T10:30:00Z",
+        "p99_latency_ms": 84
+      },
+      {
+        "service": "auth-service",
+        "version": "v1.9.3",
+        "status": "degraded",
+        "replicas": 3,
+        "region": "us-east-1",
+        "error_rate": "12.4%",
+        "p99_latency_ms": 1840,
+        "alert": "elevated 5xx on /oauth/token"
+      },
+      {
+        "service": "payment-processor",
+        "version": "v3.1.0",
+        "status": "healthy",
+        "replicas": 8,
+        "region": "us-east-1",
+        "deployed_at": "2026-06-01T22:00:00Z",
+        "p99_latency_ms": 210
+      },
+      {
+        "service": "notification-worker",
+        "version": "v0.7.2",
+        "status": "healthy",
+        "replicas": 2,
+        "region": "us-east-1",
+        "deployed_at": "2026-06-02T08:15:00Z",
+        "p99_latency_ms": 55
+      }
+    ],
+    "incidents": [
+      {
+        "id": "INC-2041",
+        "severity": "P2",
+        "title": "auth-service elevated error rate on /oauth/token",
+        "status": "INVESTIGATING",
+        "opened_at": "2026-06-02T13:45:00Z",
+        "oncall": "sarah.chen@nexus.io",
+        "affected_users_est": 320,
+        "runbook": "https://wiki.nexus.io/runbooks/auth-5xx"
+      },
+      {
+        "id": "INC-2040",
+        "severity": "P3",
+        "title": "CDN cache miss spike in EU region",
+        "status": "RESOLVED",
+        "opened_at": "2026-06-02T09:12:00Z",
+        "resolved_at": "2026-06-02T11:58:00Z",
+        "root_cause": "stale origin config after WAF rule deploy"
+      }
+    ],
+    "pipeline_runs": [
+      {
+        "id": "run-9921",
+        "branch": "main",
+        "status": "FAILED",
+        "stage": "integration-tests",
+        "duration_s": 312,
+        "triggered_by": "merge: PR#847",
+        "failure_log": "FAIL: TestOAuthFlowWithMFA (timeout after 30s)"
+      },
+      {
+        "id": "run-9920",
+        "branch": "feat/new-checkout",
+        "status": "SUCCESS",
+        "duration_s": 284,
+        "triggered_by": "push: d4f9a1c"
+      },
+      {
+        "id": "run-9919",
+        "branch": "main",
+        "status": "SUCCESS",
+        "duration_s": 271,
+        "triggered_by": "merge: PR#846"
+      }
+    ]
+  },
+  "scenarios": [
     {
-      "service": "api-gateway",
-      "version": "v2.4.1",
-      "status": "healthy",
-      "replicas": 5,
-      "region": "us-east-1",
-      "deployed_at": "2026-06-02T10:30:00Z",
-      "p99_latency_ms": 84
+      "id": "seed-devops-incident",
+      "keywords": ["incident", "outage", "pager", "oncall", "down", "degraded", "sre", "p1", "p2", "error rate"],
+      "response": "Active incident **INC-2041 (P2)**: auth-service is reporting a 12.4% error rate on `/oauth/token` since 13:45 UTC, affecting ~320 users. Oncall is sarah.chen@nexus.io. Runbook: wiki.nexus.io/runbooks/auth-5xx. Previous incident INC-2040 (CDN cache miss, EU) was resolved at 11:58 UTC — root cause was a stale WAF rule config.",
+      "tool_name": "get_incidents",
+      "tool_data": {
+        "open_incidents": 1,
+        "severity": "P2",
+        "incidents": [
+          {"id": "INC-2041", "severity": "P2", "status": "INVESTIGATING", "oncall": "sarah.chen@nexus.io", "affected_users_est": 320}
+        ]
+      }
     },
     {
-      "service": "auth-service",
-      "version": "v1.9.3",
-      "status": "degraded",
-      "replicas": 3,
-      "region": "us-east-1",
-      "error_rate": "12.4%",
-      "p99_latency_ms": 1840,
-      "alert": "elevated 5xx on /oauth/token"
+      "id": "seed-devops-deployment",
+      "keywords": ["deploy", "deployment", "rollout", "release", "rollback", "canary", "version", "replicas", "service mesh"],
+      "response": "4 services tracked. **auth-service v1.9.3** is currently **degraded** with 12.4% error rate and p99 latency at 1840ms — recommend rollback to v1.9.2 or scale up replicas. api-gateway (v2.4.1) and payment-processor (v3.1.0) are healthy. A rollback decision on auth-service should go through INC-2041.",
+      "tool_name": "get_deployment_status",
+      "tool_data": {
+        "degraded_services": 1,
+        "healthy_services": 3,
+        "deployments": [
+          {"service": "auth-service", "version": "v1.9.3", "status": "degraded", "error_rate": "12.4%", "p99_latency_ms": 1840},
+          {"service": "api-gateway", "version": "v2.4.1", "status": "healthy", "p99_latency_ms": 84},
+          {"service": "payment-processor", "version": "v3.1.0", "status": "healthy", "p99_latency_ms": 210},
+          {"service": "notification-worker", "version": "v0.7.2", "status": "healthy", "p99_latency_ms": 55}
+        ]
+      }
     },
     {
-      "service": "payment-processor",
-      "version": "v3.1.0",
-      "status": "healthy",
-      "replicas": 8,
-      "region": "us-east-1",
-      "deployed_at": "2026-06-01T22:00:00Z",
-      "p99_latency_ms": 210
-    },
-    {
-      "service": "notification-worker",
-      "version": "v0.7.2",
-      "status": "healthy",
-      "replicas": 2,
-      "region": "us-east-1",
-      "deployed_at": "2026-06-02T08:15:00Z",
-      "p99_latency_ms": 55
-    }
-  ],
-  "incidents": [
-    {
-      "id": "INC-2041",
-      "severity": "P2",
-      "title": "auth-service elevated error rate on /oauth/token",
-      "status": "INVESTIGATING",
-      "opened_at": "2026-06-02T13:45:00Z",
-      "oncall": "sarah.chen@nexus.io",
-      "affected_users_est": 320,
-      "runbook": "https://wiki.nexus.io/runbooks/auth-5xx"
-    },
-    {
-      "id": "INC-2040",
-      "severity": "P3",
-      "title": "CDN cache miss spike in EU region",
-      "status": "RESOLVED",
-      "opened_at": "2026-06-02T09:12:00Z",
-      "resolved_at": "2026-06-02T11:58:00Z",
-      "root_cause": "stale origin config after WAF rule deploy"
-    }
-  ],
-  "pipeline_runs": [
-    {
-      "id": "run-9921",
-      "branch": "main",
-      "status": "FAILED",
-      "stage": "integration-tests",
-      "duration_s": 312,
-      "triggered_by": "merge: PR#847",
-      "failure_log": "FAIL: TestOAuthFlowWithMFA (timeout after 30s)"
-    },
-    {
-      "id": "run-9920",
-      "branch": "feat/new-checkout",
-      "status": "SUCCESS",
-      "duration_s": 284,
-      "triggered_by": "push: d4f9a1c"
-    },
-    {
-      "id": "run-9919",
-      "branch": "main",
-      "status": "SUCCESS",
-      "duration_s": 271,
-      "triggered_by": "merge: PR#846"
+      "id": "seed-devops-pipeline",
+      "keywords": ["pipeline", "ci", "cd", "build", "test", "github actions", "failed build", "test failure", "ci/cd"],
+      "response": "Latest pipeline run **run-9921** on `main` **FAILED** at the integration-tests stage after 312s. Failure: `TestOAuthFlowWithMFA` timed out after 30s — likely related to the degraded auth-service. Previous two runs on `main` and `feat/new-checkout` both succeeded. Recommend blocking the next `main` merge until INC-2041 is resolved.",
+      "tool_name": "get_pipeline_runs",
+      "tool_data": {
+        "last_run_status": "FAILED",
+        "failed_stage": "integration-tests",
+        "runs": [
+          {"id": "run-9921", "branch": "main", "status": "FAILED", "stage": "integration-tests", "failure_log": "TestOAuthFlowWithMFA timeout"},
+          {"id": "run-9920", "branch": "feat/new-checkout", "status": "SUCCESS"},
+          {"id": "run-9919", "branch": "main", "status": "SUCCESS"}
+        ]
+      }
     }
   ]
 }

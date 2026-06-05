@@ -19,6 +19,9 @@ import (
 func HandleMCPMessage(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.Context().Value(TenantIDKey).(string)
+		if denyPrivateTenant(w, r, dbManager, tenantID) {
+			return
+		}
 		log.Printf("[MCP] POST /mcp/message tenant=%s\n", tenantID)
 
 		var req models.JSONRPCRequest
@@ -39,15 +42,8 @@ func HandleMCPMessage(dbManager *db.TenantDBManager) http.HandlerFunc {
 				resp.Error = map[string]interface{}{"code": -32602, "message": "Invalid params"}
 				break
 			}
-			scenario := registry.MatchToolForTenant(params.Name, tenantScenarios)
+			scenario := registry.MatchTool(params.Name, tenantScenarios)
 			toolData := scenario.MCPToolData
-			if scenario.StateKey != "" {
-				if state, err := dbManager.ReadState(tenantID); err == nil {
-					if node, ok := state[scenario.StateKey]; ok {
-						toolData = node
-					}
-				}
-			}
 			resp.Result = map[string]interface{}{
 				"content": []map[string]interface{}{
 					{"type": "text", "text": "Successfully retrieved mock dataset."},
@@ -56,16 +52,8 @@ func HandleMCPMessage(dbManager *db.TenantDBManager) http.HandlerFunc {
 			}
 
 		case "tools/list":
-			includeGlobal := true
-			if settings, err := dbManager.ReadSettings(tenantID); err == nil {
-				if v, ok := settings["include_global_tools"]; ok {
-					if b, ok := v.(bool); ok {
-						includeGlobal = b
-					}
-				}
-			}
 			resp.Result = map[string]interface{}{
-				"tools": registry.ListToolsForTenant(tenantScenarios, includeGlobal),
+				"tools": registry.ListTools(tenantScenarios),
 			}
 
 		case "resources/list":
@@ -119,6 +107,9 @@ func HandleMCPMessage(dbManager *db.TenantDBManager) http.HandlerFunc {
 func HandleMCPSSE(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.Context().Value(TenantIDKey).(string)
+		if denyPrivateTenant(w, r, dbManager, tenantID) {
+			return
+		}
 
 		flusher, ok := w.(http.Flusher)
 		if !ok {

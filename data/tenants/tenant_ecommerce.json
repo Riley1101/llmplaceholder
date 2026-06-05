@@ -1,30 +1,41 @@
 {
-  "billing_cycle": "Q2-2026",
-  "active_subscriptions": 1402,
-  "mrr_usd": 42500.00,
-  "recent_invoices": [
+  "state": {
+    "billing_cycle": "Q2-2026",
+    "active_subscriptions": 1402,
+    "mrr_usd": 42500.00,
+    "recent_invoices": [
+      {"invoice_id": "INV-2026-X4", "customer": "Revilo Recruiting", "amount": 450.00, "status": "PAID", "date": "2026-05-15T09:00:00Z"},
+      {"invoice_id": "INV-2026-X5", "customer": "Acme Corp", "amount": 1200.00, "status": "OVERDUE", "date": "2026-05-01T09:00:00Z"}
+    ],
+    "support_tickets": [
+      {"ticket_id": "TK-992", "user_email": "billing@acmecorp.com", "issue": "Overcharge on May invoice, requested credit not applied.", "status": "OPEN", "priority": "HIGH"}
+    ]
+  },
+  "scenarios": [
     {
-      "invoice_id": "INV-2026-X4",
-      "customer": "Revilo Recruiting",
-      "amount": 450.00,
-      "status": "PAID",
-      "date": "2026-05-15T09:00:00Z"
+      "id": "seed-fintech-billing",
+      "keywords": ["invoice", "billing", "charge", "payment", "overdue", "revenue", "accounts receivable", "receipt"],
+      "response": "I pulled the billing ledger. The highest-priority overdue item is Invoice **#INV-2026-X5** from Acme Corp for **$1,200.00**, past due since May 1st. There is also an open support ticket TK-992 from billing@acmecorp.com flagging an overcharge dispute. Would you like me to draft a follow-up or flag this for collections?",
+      "tool_name": "get_invoice_ledger",
+      "tool_data": {
+        "status": "success",
+        "data": [
+          {"id": "INV-2026-X5", "client": "Acme Corp", "amount": 1200.00, "status": "OVERDUE", "due_date": "2026-05-01"},
+          {"id": "INV-2026-X4", "client": "Revilo Recruiting", "amount": 450.00, "status": "PAID", "due_date": "2026-05-15"}
+        ]
+      }
     },
     {
-      "invoice_id": "INV-2026-X5",
-      "customer": "Acme Corp",
-      "amount": 1200.00,
-      "status": "OVERDUE",
-      "date": "2026-05-01T09:00:00Z"
-    }
-  ],
-  "support_tickets": [
-    {
-      "ticket_id": "TK-992",
-      "user_email": "billing@acmecorp.com",
-      "issue": "Overcharge on May invoice, requested natural gas conversion credit not applied.",
-      "status": "OPEN",
-      "priority": "HIGH"
+      "id": "seed-fintech-subscriptions",
+      "keywords": ["subscription", "mrr", "arr", "churn", "renewal", "plan", "upgrade", "active accounts"],
+      "response": "Current MRR is **$42,500** across **1,402 active subscriptions**. Billing cycle Q2-2026 is in progress. One account (Acme Corp) is overdue with an open billing dispute (TK-992). Recommend resolving the dispute before the next billing run.",
+      "tool_name": "get_subscription_summary",
+      "tool_data": {
+        "mrr_usd": 42500,
+        "active_subscriptions": 1402,
+        "billing_cycle": "Q2-2026",
+        "overdue_count": 1
+      }
     }
   ]
 }

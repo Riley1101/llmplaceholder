@@ -1,18 +1,63 @@
 {
-  "system_architecture": "x86_64",
-  "boot_status": "kernel_panic",
-  "gdt_entries": [
-    {"selector": "0x00", "type": "NULL", "base": "0x0", "limit": "0x0"},
-    {"selector": "0x08", "type": "CODE_RING0", "base": "0x0", "limit": "0xFFFFF", "flags": "0xCF"},
-    {"selector": "0x10", "type": "DATA_RING0", "base": "0x0", "limit": "0xFFFFF", "flags": "0x8F"}
-  ],
-  "interrupt_logs": [
-    {"vector": 13, "name": "General Protection Fault", "timestamp": "2026-06-02T14:22:10Z", "error_code": "0x0000"},
-    {"vector": 14, "name": "Page Fault", "timestamp": "2026-06-02T14:22:11Z", "error_code": "0x0002", "cr2": "0x00000000DEADBEEF"}
-  ],
-  "apic_state": {
-    "local_apic_base": "0xFEE00000",
-    "spurious_interrupt_vector": 255,
-    "timer_mode": "periodic"
-  }
+  "state": {
+    "system_architecture": "x86_64",
+    "boot_status": "kernel_panic",
+    "gdt_entries": [
+      {"selector": "0x00", "type": "NULL", "base": "0x0", "limit": "0x0"},
+      {"selector": "0x08", "type": "CODE_RING0", "base": "0x0", "limit": "0xFFFFF", "flags": "0xCF"},
+      {"selector": "0x10", "type": "DATA_RING0", "base": "0x0", "limit": "0xFFFFF", "flags": "0x8F"}
+    ],
+    "interrupt_logs": [
+      {"vector": 13, "name": "General Protection Fault", "timestamp": "2026-06-02T14:22:10Z", "error_code": "0x0000"},
+      {"vector": 14, "name": "Page Fault", "timestamp": "2026-06-02T14:22:11Z", "error_code": "0x0002", "cr2": "0x00000000DEADBEEF"}
+    ],
+    "apic_state": {
+      "local_apic_base": "0xFEE00000",
+      "spurious_interrupt_vector": 255,
+      "timer_mode": "periodic"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "seed-kernel-panic",
+      "keywords": ["kernel panic", "page fault", "general protection fault", "interrupt", "apic", "segfault", "crash dump", "boot"],
+      "response": "Boot status is **kernel_panic**. The interrupt log shows a **General Protection Fault** (vector 13, error 0x0000) at 14:22:10 UTC followed immediately by a **Page Fault** (vector 14, CR2=0x00000000DEADBEEF) — a null-pointer dereference in a ring-0 context. GDT looks well-formed. APIC is in periodic timer mode. This pattern suggests a bad kernel pointer in an interrupt handler. Check recent driver patches.",
+      "tool_name": "get_interrupt_logs",
+      "tool_data": {
+        "boot_status": "kernel_panic",
+        "last_fault": "Page Fault",
+        "interrupt_logs": [
+          {"vector": 13, "name": "General Protection Fault", "timestamp": "2026-06-02T14:22:10Z", "error_code": "0x0000"},
+          {"vector": 14, "name": "Page Fault", "timestamp": "2026-06-02T14:22:11Z", "cr2": "0x00000000DEADBEEF"}
+        ]
+      }
+    },
+    {
+      "id": "seed-kernel-gdt",
+      "keywords": ["gdt", "segment descriptor", "selector", "ring0", "ring3", "privilege level", "memory protection"],
+      "response": "GDT has 3 entries: NULL descriptor (0x00), CODE_RING0 at selector 0x08 (base 0x0, limit 0xFFFFF, flags 0xCF — 32-bit granularity), and DATA_RING0 at selector 0x10 (flags 0x8F). No user-space (ring-3) descriptors are defined yet. This is a minimal flat-model GDT suitable for a kernel stub but not yet ready for user processes.",
+      "tool_name": "get_gdt_state",
+      "tool_data": {
+        "entry_count": 3,
+        "ring3_entries": 0,
+        "entries": [
+          {"selector": "0x00", "type": "NULL"},
+          {"selector": "0x08", "type": "CODE_RING0", "flags": "0xCF"},
+          {"selector": "0x10", "type": "DATA_RING0", "flags": "0x8F"}
+        ]
+      }
+    },
+    {
+      "id": "seed-kernel-apic",
+      "keywords": ["apic", "timer", "local apic", "spurious", "irq", "interrupt controller", "lapic"],
+      "response": "Local APIC is mapped at 0xFEE00000. Timer mode is **periodic** with spurious interrupt vector 255. APIC appears functional — the kernel_panic is likely upstream of timer initialization. No APIC errors in the interrupt log; focus debugging on the GPF at 14:22:10 instead.",
+      "tool_name": "get_apic_state",
+      "tool_data": {
+        "local_apic_base": "0xFEE00000",
+        "timer_mode": "periodic",
+        "spurious_vector": 255,
+        "status": "operational"
+      }
+    }
+  ]
 }

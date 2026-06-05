@@ -1,7 +1,10 @@
 {{/* ── Detail shell (tabs + initial state tab) ───────────────────────────── */}}
 {{define "tenant-detail-inner"}}
 <div class="flex items-center gap-4 px-5 border-b border-slate-800 bg-black/10 shrink-0">
-  <span class="font-mono text-[13px] font-semibold text-slate-200 shrink-0 py-3">{{.TenantID}}</span>
+  <div class="flex items-center gap-2 shrink-0 py-3">
+    <span class="font-mono text-[13px] font-semibold text-slate-200">{{.TenantID}}</span>
+    {{if .IsGlobal}}<span class="text-[10px] font-semibold text-slate-600 bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5">global · read-only</span>{{end}}
+  </div>
   <div class="flex gap-1 flex-1">
     <button type="button" class="detail-tab active text-sm" onclick="setDetailTab(this)"
       hx-get="/ui/tenants/{{.PathID}}/state" hx-target="#tenant-tab-content" hx-swap="innerHTML">State</button>
@@ -12,6 +15,7 @@
     <button type="button" class="detail-tab text-sm" onclick="setDetailTab(this)"
       hx-get="/ui/tenants/{{.PathID}}/chaos" hx-target="#tenant-tab-content" hx-swap="innerHTML">Chaos</button>
   </div>
+  {{if not .IsGlobal}}
   <button type="button"
     hx-delete="/ui/tenants/{{.PathID}}"
     hx-target="#tenant-sidebar-list"
@@ -20,6 +24,7 @@
     class="cursor-pointer text-[12px] font-medium text-slate-600 hover:text-red-400 transition-colors shrink-0 py-3">
     Delete tenant
   </button>
+  {{end}}
 </div>
 <div id="tenant-tab-content" class="flex-1 min-h-0 overflow-auto">
   {{template "tenant-state-tab" .}}
@@ -28,26 +33,32 @@
 
 {{/* ── State tab ──────────────────────────────────────────────────────────── */}}
 {{define "tenant-state-tab"}}
-<form class="flex flex-col h-full p-5 gap-3"
-  hx-put="/ui/tenants/{{.PathID}}/state"
-  hx-target="#state-save-msg"
-  hx-swap="innerHTML">
+<div class="flex flex-col h-full p-5 gap-3">
   <textarea name="state" spellcheck="false"
-    class="flex-1 min-h-[200px] bg-raised border border-slate-700 rounded-xl text-[12.5px] font-mono text-slate-300 leading-relaxed px-4 py-3 resize-none focus:outline-none focus:border-accent/40">{{.StateJSON}}</textarea>
-  <div class="flex items-center gap-3 shrink-0">
+    {{if not .IsGlobal}}form="state-form"{{end}}
+    {{if .IsGlobal}}readonly{{end}}
+    class="flex-1 min-h-[200px] bg-raised border border-slate-700 rounded-xl text-[12.5px] font-mono text-slate-300 leading-relaxed px-4 py-3 resize-none focus:outline-none focus:border-accent/40 {{if .IsGlobal}}opacity-60 cursor-default{{end}}">{{.StateJSON}}</textarea>
+  {{if not .IsGlobal}}
+  <form id="state-form" class="flex items-center gap-3 shrink-0"
+    hx-put="/ui/tenants/{{.PathID}}/state"
+    hx-target="#state-save-msg"
+    hx-swap="innerHTML"
+    hx-include="[name='state']">
     <button type="submit"
       class="cursor-pointer bg-accent/20 text-accent font-bold text-[13px] px-5 py-2 rounded-full border border-accent/30 hover:bg-accent/30 transition-colors">
       Save state
     </button>
     <span id="state-save-msg" class="text-[12px]"></span>
-  </div>
-</form>
+  </form>
+  {{end}}
+</div>
 {{end}}
 
 {{/* ── Scenarios tab ──────────────────────────────────────────────────────── */}}
 {{define "tenant-scenarios-tab"}}
 <div class="flex h-full min-h-0">
-  <!-- Left: form -->
+  {{if not .IsGlobal}}
+  <!-- Left: add form (owned tenants only) -->
   <div class="flex flex-col w-80 xl:w-96 shrink-0 border-r border-slate-800 overflow-y-auto">
     <form class="p-5 flex flex-col gap-3 flex-1"
       hx-post="/ui/tenants/{{.PathID}}/scenarios"
@@ -73,43 +84,14 @@
       </div>
     </form>
   </div>
-  <!-- Right: tenant scenarios list -->
+  {{end}}
+  <!-- Scenarios list -->
   <div class="flex flex-col flex-1 min-w-0 min-h-0 overflow-y-auto">
     <div id="scenario-items" class="flex flex-col gap-2 p-4">
       {{template "tenant-scenario-items" .}}
     </div>
   </div>
 </div>
-{{end}}
-
-{{define "tenant-mock-scenarios"}}
-{{if .Scenarios}}
-<div id="mock-sc-paged" class="px-4 pt-4 pb-4">
-  <p class="label mb-3">Built-in scenarios</p>
-  <div class="flex flex-col gap-1.5">
-    {{range .Scenarios}}
-    <div class="flex flex-col gap-1.5 px-3 py-2.5 rounded-lg border border-slate-800 bg-raised">
-      <span class="text-[10.5px] font-mono text-slate-600">{{.ID}}</span>
-      <div class="flex flex-wrap gap-1">
-        {{range .Keywords}}<span class="text-[10px] font-mono bg-slate-800/60 text-slate-500 border border-slate-700/60 rounded px-1.5 py-0.5">{{.}}</span>{{end}}
-      </div>
-      {{if .FullResponse}}<p class="text-[11px] text-slate-500 leading-snug line-clamp-2">{{.FullResponse}}</p>{{end}}
-    </div>
-    {{end}}
-  </div>
-  <div class="flex items-center justify-between mt-3">
-    <button type="button" aria-label="Previous page"
-      {{if .HasPrev}}hx-get="/ui/tenants/{{.PathID}}/mock-scenarios?page={{.PrevPage}}" hx-target="#mock-sc-paged" hx-swap="outerHTML"{{end}}
-      {{if not .HasPrev}}disabled aria-disabled="true"{{end}}
-      class="cursor-pointer px-3 py-1 text-[11px] font-semibold text-slate-400 border border-slate-700 rounded-full hover:text-slate-200 hover:border-slate-600 transition-colors disabled:opacity-30 disabled:cursor-default">← Prev</button>
-    <span class="text-[11px] text-slate-600" aria-live="polite">{{add1 .Page}} of {{.TotalPages}}</span>
-    <button type="button" aria-label="Next page"
-      {{if .HasNext}}hx-get="/ui/tenants/{{.PathID}}/mock-scenarios?page={{.NextPage}}" hx-target="#mock-sc-paged" hx-swap="outerHTML"{{end}}
-      {{if not .HasNext}}disabled aria-disabled="true"{{end}}
-      class="cursor-pointer px-3 py-1 text-[11px] font-semibold text-slate-400 border border-slate-700 rounded-full hover:text-slate-200 hover:border-slate-600 transition-colors disabled:opacity-30 disabled:cursor-default">Next →</button>
-  </div>
-</div>
-{{end}}
 {{end}}
 
 {{define "tenant-scenario-items"}}
@@ -122,11 +104,13 @@
       </div>
       <p class="text-[12px] text-slate-500 truncate">{{.Response}}</p>
     </div>
+    {{if not $.IsGlobal}}
     <button type="button" aria-label="Delete scenario"
       hx-delete="/ui/tenants/{{.TenantID | pathEscape}}/scenarios/{{.ID}}"
       hx-target="closest [data-sid]"
       hx-swap="outerHTML"
       class="cursor-pointer text-[12px] text-slate-600 hover:text-red-400 transition-colors shrink-0 mt-0.5">✕</button>
+    {{end}}
   </div>
   {{end}}
 {{else}}
@@ -134,49 +118,10 @@
 {{end}}
 {{end}}
 
-{{/* ── Global Scenarios list (loaded into right column) ───────────────────── */}}
-{{define "global-scenarios-list"}}
-<div id="global-sc-paged" class="flex flex-col gap-2 p-4">
-  {{if .Scenarios}}
-  {{range .Scenarios}}
-  <div class="flex items-start gap-3 px-3 py-2.5 rounded-lg border border-slate-800 bg-raised" data-gsid="{{.ID}}">
-    <div class="flex-1 min-w-0">
-      <div class="flex flex-wrap gap-1 mb-1">
-        {{range .Keywords}}<span class="text-[10px] font-mono bg-accent/10 text-accent border border-accent/20 rounded px-1.5 py-0.5">{{.}}</span>{{end}}
-      </div>
-      {{if .FullResponse}}<p class="text-[11px] text-slate-500 leading-snug line-clamp-2">{{.FullResponse}}</p>{{end}}
-      <span class="text-[10px] font-mono text-slate-700">{{.ID}}</span>
-    </div>
-    <button type="button" aria-label="Delete global scenario"
-      hx-delete="/ui/global-scenarios/{{.ID}}"
-      hx-target="closest [data-gsid]"
-      hx-swap="outerHTML"
-      class="cursor-pointer text-[12px] text-slate-600 hover:text-red-400 transition-colors shrink-0 mt-0.5">✕</button>
-  </div>
-  {{end}}
-  {{if or .HasPrev .HasNext}}
-  <div class="flex items-center justify-between mt-2">
-    <button type="button" aria-label="Previous page"
-      {{if .HasPrev}}hx-get="/ui/global-scenarios?page={{.PrevPage}}" hx-target="#global-sc-paged" hx-swap="outerHTML"{{end}}
-      {{if not .HasPrev}}disabled aria-disabled="true"{{end}}
-      class="cursor-pointer px-3 py-1 text-[11px] font-semibold text-slate-400 border border-slate-700 rounded-full hover:text-slate-200 hover:border-slate-600 transition-colors disabled:opacity-30 disabled:cursor-default">← Prev</button>
-    <span class="text-[11px] text-slate-600" aria-live="polite">{{add1 .Page}} of {{.TotalPages}}</span>
-    <button type="button" aria-label="Next page"
-      {{if .HasNext}}hx-get="/ui/global-scenarios?page={{.NextPage}}" hx-target="#global-sc-paged" hx-swap="outerHTML"{{end}}
-      {{if not .HasNext}}disabled aria-disabled="true"{{end}}
-      class="cursor-pointer px-3 py-1 text-[11px] font-semibold text-slate-400 border border-slate-700 rounded-full hover:text-slate-200 hover:border-slate-600 transition-colors disabled:opacity-30 disabled:cursor-default">Next →</button>
-  </div>
-  {{end}}
-  {{else}}
-  <div class="text-[12px] text-slate-600 text-center py-8">No global scenarios.</div>
-  {{end}}
-</div>
-{{end}}
-
 {{/* ── MCP Tools tab ──────────────────────────────────────────────────────── */}}
 {{define "tenant-tools-tab"}}
 <div class="flex flex-col h-full">
-  {{template "global-tools-toggle" .}}
+  {{if not .IsGlobal}}
   <form class="p-5 border-b border-slate-800 shrink-0 flex flex-col gap-3"
     hx-post="/ui/tenants/{{.PathID}}/tools"
     hx-target="#tenant-tool-items"
@@ -212,6 +157,7 @@
       <span id="tool-msg" class="text-[12px]"></span>
     </div>
   </form>
+  {{end}}
   <div class="flex-1 overflow-y-auto">
     <div class="px-4 pt-4 pb-2">
       <p class="label mb-2">Tenant tools</p>
@@ -219,14 +165,6 @@
         {{template "tenant-tool-items" .}}
       </div>
     </div>
-    {{if .GlobalTools}}
-    <div class="px-4 pt-4 pb-4">
-      <p class="label mb-2">Global tools <span class="normal-case font-normal text-slate-600">(read-only)</span></p>
-      <div class="flex flex-wrap gap-1.5">
-        {{range .GlobalTools}}<span class="text-[11px] font-mono text-slate-500 bg-raised border border-slate-800 rounded-full px-2.5 py-0.5">{{.}}</span>{{end}}
-      </div>
-    </div>
-    {{end}}
   </div>
 </div>
 {{end}}
@@ -242,36 +180,18 @@
       </div>
       {{if .Response}}<p class="text-[11.5px] text-slate-500 truncate">{{.Response}}</p>{{end}}
     </div>
+    {{if not $.IsGlobal}}
     <button type="button" aria-label="Delete tool"
       hx-delete="/ui/tenants/{{.TenantID | pathEscape}}/tools/{{.ID}}"
       hx-target="closest [data-toolid]"
       hx-swap="outerHTML"
       class="cursor-pointer text-[12px] text-slate-600 hover:text-red-400 transition-colors shrink-0 mt-0.5">✕</button>
+    {{end}}
   </div>
   {{end}}
 {{else}}
 <div class="text-[12px] text-slate-600 text-center py-3">No tenant tools yet.</div>
 {{end}}
-{{end}}
-
-{{define "global-tools-toggle"}}
-<div id="global-tools-toggle-section" class="flex items-center justify-between px-5 py-3 border-b border-slate-800 shrink-0 bg-black/10">
-  <div>
-    <span class="text-[12.5px] font-semibold text-slate-300">Include global tools</span>
-    <span class="ml-2 text-[11px] text-slate-600">tools/list scope</span>
-  </div>
-  <form hx-post="/ui/tenants/{{.PathID}}/settings"
-        hx-target="#tenant-tab-content"
-        hx-swap="innerHTML">
-    <input type="hidden" name="include_global_tools" value="{{if .IncludeGlobal}}false{{else}}true{{end}}" />
-    <button type="submit"
-      aria-label="Include global tools"
-      aria-pressed="{{if .IncludeGlobal}}true{{else}}false{{end}}"
-      class="relative cursor-pointer w-10 h-5 rounded-full transition-colors shrink-0 {{if .IncludeGlobal}}bg-accent{{else}}bg-slate-700{{end}}">
-      <span class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform {{if .IncludeGlobal}}translate-x-5{{else}}translate-x-0{{end}}"></span>
-    </button>
-  </form>
-</div>
 {{end}}
 
 {{/* ── Chaos tab ──────────────────────────────────────────────────────────── */}}
@@ -281,6 +201,7 @@
     <p class="label mb-3">Fault profile</p>
     <div class="flex flex-wrap gap-2">
       {{range .Profiles}}
+      {{if not $.IsGlobal}}
       <button type="button"
         hx-post="/ui/tenants/{{$.PathID}}/chaos"
         hx-vals='{"profile":"{{.}}"}'
@@ -290,6 +211,9 @@
         class="chaos-btn cursor-pointer px-4 py-2 rounded-full text-[13px] font-semibold border transition-colors {{if eq $.Profile .}}active{{end}}">
         {{.}}
       </button>
+      {{else}}
+      <span class="px-4 py-2 rounded-full text-[13px] font-semibold border border-slate-800 text-slate-600 {{if eq $.Profile .}}bg-slate-800{{end}}">{{.}}</span>
+      {{end}}
       {{end}}
     </div>
   </div>

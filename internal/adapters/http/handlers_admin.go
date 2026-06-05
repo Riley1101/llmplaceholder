@@ -21,18 +21,40 @@ func jsonErr(w http.ResponseWriter, msg string, code int) {
 	json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
 
+// adminCheckWrite verifies the current user owns the tenant (not global, not someone else's).
+func adminCheckWrite(w http.ResponseWriter, dbManager *db.TenantDBManager, tenantID, userID string) bool {
+	ownerID, isGlobal, err := dbManager.TenantOwner(tenantID)
+	if err != nil {
+		jsonErr(w, "tenant not found", http.StatusNotFound)
+		return false
+	}
+	if isGlobal {
+		jsonErr(w, "global tenants are read-only", http.StatusForbidden)
+		return false
+	}
+	if ownerID != userID {
+		jsonErr(w, "not your tenant", http.StatusForbidden)
+		return false
+	}
+	return true
+}
+
 // ── Tenant CRUD ───────────────────────────────────────────────────────────────
 
 // GET /admin/tenants
 func HandleListTenants(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tenants, err := dbManager.ListTenants()
+		userID := ""
+		if u := UserFromContext(r); u != nil {
+			userID = u.ID
+		}
+		tenants, err := dbManager.ListTenantsForUser(userID)
 		if err != nil {
 			jsonErr(w, "failed to list tenants", http.StatusInternalServerError)
 			return
 		}
 		if tenants == nil {
-			tenants = []string{}
+			tenants = []models.TenantMeta{}
 		}
 		jsonOK(w, map[string]interface{}{"tenants": tenants})
 	}
@@ -41,6 +63,7 @@ func HandleListTenants(dbManager *db.TenantDBManager) http.HandlerFunc {
 // POST /admin/tenants  body: {"tenant_id":"...", "state":{...}}
 func HandleCreateTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID := UserFromContext(r).ID
 		var body struct {
 			TenantID string                 `json:"tenant_id"`
 			State    map[string]interface{} `json:"state"`
@@ -50,22 +73,13 @@ func HandleCreateTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 			return
 		}
 
-		exists, err := dbManager.TenantExists(body.TenantID)
-		if err != nil {
-			jsonErr(w, "db error", http.StatusInternalServerError)
-			return
-		}
-		if exists {
+		if err := dbManager.CreateTenantForUser(body.TenantID, userID); err != nil {
 			jsonErr(w, "tenant already exists", http.StatusConflict)
 			return
 		}
 
-		if body.State == nil {
-			body.State = map[string]interface{}{}
-		}
-		if err := dbManager.WriteState(body.TenantID, body.State); err != nil {
-			jsonErr(w, "failed to create tenant", http.StatusInternalServerError)
-			return
+		if body.State != nil {
+			dbManager.WriteState(body.TenantID, body.State)
 		}
 
 		log.Printf("[Admin] Created tenant: %s\n", body.TenantID)
@@ -78,6 +92,19 @@ func HandleCreateTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 func HandleGetTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
+		ownerID, isGlobal, err := dbManager.TenantOwner(tenantID)
+		if err != nil {
+			jsonErr(w, "tenant not found", http.StatusNotFound)
+			return
+		}
+		userID := ""
+		if u := UserFromContext(r); u != nil {
+			userID = u.ID
+		}
+		if !isGlobal && ownerID != userID {
+			jsonErr(w, "not your tenant", http.StatusForbidden)
+			return
+		}
 		state, err := dbManager.ReadState(tenantID)
 		if err != nil {
 			jsonErr(w, "failed to read state", http.StatusInternalServerError)
@@ -91,6 +118,9 @@ func HandleGetTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 func HandleUpdateTenantState(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
+		if !adminCheckWrite(w, dbManager, tenantID, UserFromContext(r).ID) {
+			return
+		}
 
 		var body struct {
 			State map[string]interface{} `json:"state"`
@@ -113,6 +143,9 @@ func HandleUpdateTenantState(dbManager *db.TenantDBManager) http.HandlerFunc {
 func HandleDeleteTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
+		if !adminCheckWrite(w, dbManager, tenantID, UserFromContext(r).ID) {
+			return
+		}
 		if err := dbManager.DeleteState(tenantID); err != nil {
 			jsonErr(w, "failed to delete tenant", http.StatusInternalServerError)
 			return
@@ -141,6 +174,19 @@ func HandleResetTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 func HandleListScenarios(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
+		ownerID, isGlobal, err := dbManager.TenantOwner(tenantID)
+		if err != nil {
+			jsonErr(w, "tenant not found", http.StatusNotFound)
+			return
+		}
+		userID := ""
+		if u := UserFromContext(r); u != nil {
+			userID = u.ID
+		}
+		if !isGlobal && ownerID != userID {
+			jsonErr(w, "not your tenant", http.StatusForbidden)
+			return
+		}
 		scenarios, err := dbManager.GetScenariosForTenant(tenantID)
 		if err != nil {
 			jsonErr(w, "failed to list scenarios", http.StatusInternalServerError)
@@ -158,6 +204,9 @@ func HandleListScenarios(dbManager *db.TenantDBManager) http.HandlerFunc {
 func HandleCreateScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
+		if !adminCheckWrite(w, dbManager, tenantID, UserFromContext(r).ID) {
+			return
+		}
 
 		var body models.TenantScenario
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -169,12 +218,6 @@ func HandleCreateScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
 			return
 		}
 		body.TenantID = tenantID
-
-		// Ensure tenant row exists before inserting FK-constrained scenario
-		if _, err := dbManager.ReadState(tenantID); err != nil {
-			jsonErr(w, "tenant not found", http.StatusNotFound)
-			return
-		}
 
 		created, err := dbManager.CreateScenario(body)
 		if err != nil {
@@ -191,6 +234,9 @@ func HandleCreateScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
 // DELETE /admin/tenants/{id}/scenarios/{sid}
 func HandleDeleteScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if !adminCheckWrite(w, dbManager, r.PathValue("id"), UserFromContext(r).ID) {
+			return
+		}
 		sid := r.PathValue("sid")
 		if err := dbManager.DeleteScenario(sid); err != nil {
 			jsonErr(w, "failed to delete scenario", http.StatusInternalServerError)
@@ -206,6 +252,19 @@ func HandleDeleteScenario(dbManager *db.TenantDBManager) http.HandlerFunc {
 func HandleGetTenantSettings(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
+		ownerID, isGlobal, err := dbManager.TenantOwner(tenantID)
+		if err != nil {
+			jsonErr(w, "tenant not found", http.StatusNotFound)
+			return
+		}
+		userID := ""
+		if u := UserFromContext(r); u != nil {
+			userID = u.ID
+		}
+		if !isGlobal && ownerID != userID {
+			jsonErr(w, "not your tenant", http.StatusForbidden)
+			return
+		}
 		settings, err := dbManager.ReadSettings(tenantID)
 		if err != nil {
 			jsonErr(w, "failed to read settings", http.StatusInternalServerError)
@@ -219,6 +278,9 @@ func HandleGetTenantSettings(dbManager *db.TenantDBManager) http.HandlerFunc {
 func HandlePatchTenantSettings(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
+		if !adminCheckWrite(w, dbManager, tenantID, UserFromContext(r).ID) {
+			return
+		}
 		var patch map[string]interface{}
 		if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
 			jsonErr(w, "invalid JSON", http.StatusBadRequest)
@@ -266,9 +328,12 @@ func HandleSetChaos(chaosManager *chaos.Manager) http.HandlerFunc {
 }
 
 // POST /admin/tenants/{id}/chaos  body: {"profile":"..."}
-func HandleSetTenantChaos(chaosManager *chaos.Manager) http.HandlerFunc {
+func HandleSetTenantChaos(chaosManager *chaos.Manager, dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
+		if !adminCheckWrite(w, dbManager, tenantID, UserFromContext(r).ID) {
+			return
+		}
 
 		var body struct {
 			Profile string `json:"profile"`
@@ -292,9 +357,22 @@ func HandleSetTenantChaos(chaosManager *chaos.Manager) http.HandlerFunc {
 }
 
 // GET /admin/tenants/{id}/chaos
-func HandleGetTenantChaos(chaosManager *chaos.Manager) http.HandlerFunc {
+func HandleGetTenantChaos(chaosManager *chaos.Manager, dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.PathValue("id")
+		ownerID, isGlobal, err := dbManager.TenantOwner(tenantID)
+		if err != nil {
+			jsonErr(w, "tenant not found", http.StatusNotFound)
+			return
+		}
+		userID := ""
+		if u := UserFromContext(r); u != nil {
+			userID = u.ID
+		}
+		if !isGlobal && ownerID != userID {
+			jsonErr(w, "not your tenant", http.StatusForbidden)
+			return
+		}
 		profile := chaosManager.GetProfile(tenantID)
 		jsonOK(w, map[string]string{"tenant_id": tenantID, "profile": string(profile)})
 	}

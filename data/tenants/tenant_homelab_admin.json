@@ -1,33 +1,74 @@
 {
-  "hypervisor_nodes": [
+  "state": {
+    "hypervisor_nodes": [
+      {"node_id": "px-node-01", "uptime_days": 42, "cpu_load_percent": 18.4, "ram_usage_gb": 32.1, "ram_total_gb": 64.0}
+    ],
+    "zfs_storage_pools": [
+      {
+        "pool_name": "tank",
+        "state": "DEGRADED",
+        "capacity_percent": 78,
+        "vdevs": [
+          {"disk": "nvme0n1", "status": "ONLINE"},
+          {"disk": "nvme1n1", "status": "UNAVAIL", "errors": 142}
+        ]
+      },
+      {
+        "pool_name": "fast_cache",
+        "state": "ONLINE",
+        "capacity_percent": 22,
+        "vdevs": [{"disk": "nvme2n1", "status": "ONLINE"}]
+      }
+    ],
+    "lxc_containers": [
+      {"vmid": 100, "hostname": "nextcloud-app", "status": "running", "ip": "10.0.0.45"},
+      {"vmid": 101, "hostname": "jellyfin-media", "status": "running", "ip": "10.0.0.46"},
+      {"vmid": 102, "hostname": "cloudflare-tunnel", "status": "stopped", "ip": "10.0.0.47"}
+    ]
+  },
+  "scenarios": [
     {
-      "node_id": "px-node-01",
-      "uptime_days": 42,
-      "cpu_load_percent": 18.4,
-      "ram_usage_gb": 32.1,
-      "ram_total_gb": 64.0
-    }
-  ],
-  "zfs_storage_pools": [
-    {
-      "pool_name": "tank",
-      "state": "DEGRADED",
-      "capacity_percent": 78,
-      "vdevs": [
-        {"disk": "nvme0n1", "status": "ONLINE"},
-        {"disk": "nvme1n1", "status": "UNAVAIL", "errors": 142}
-      ]
+      "id": "seed-homelab-nodes",
+      "keywords": ["proxmox", "hypervisor", "node", "vm", "cpu", "ram", "server", "bare metal"],
+      "response": "Proxmox node **px-node-01** has been up 42 days with 18.4% CPU load and 32.1 GB RAM used of 64 GB total — headroom is healthy. ZFS pool **tank** is in a **DEGRADED** state: nvme1n1 shows UNAVAIL with 142 errors. Recommend replacing that drive before the pool loses redundancy. Pool **fast_cache** is ONLINE at 22% capacity.",
+      "tool_name": "fetch_hypervisor_metrics",
+      "tool_data": {
+        "node": "px-node-01",
+        "uptime_days": 42,
+        "cpu_load_pct": 18.4,
+        "ram_used_gb": 32.1,
+        "ram_total_gb": 64.0,
+        "zfs_degraded_pools": 1
+      }
     },
     {
-      "pool_name": "fast_cache",
-      "state": "ONLINE",
-      "capacity_percent": 22,
-      "vdevs": [{"disk": "nvme2n1", "status": "ONLINE"}]
+      "id": "seed-homelab-storage",
+      "keywords": ["zfs", "pool", "disk", "storage", "nvme", "raid", "vdev", "capacity", "degraded"],
+      "response": "ZFS pool **tank** is **DEGRADED** — nvme1n1 has UNAVAIL status with 142 I/O errors. This is a single-drive failure away from data loss. Recommend: (1) `zpool offline tank nvme1n1`, (2) replace drive, (3) `zpool replace tank nvme1n1`. Pool **fast_cache** is healthy at 22% capacity.",
+      "tool_name": "get_zfs_pools",
+      "tool_data": {
+        "degraded_pools": 1,
+        "pools": [
+          {"name": "tank", "state": "DEGRADED", "capacity_pct": 78, "failed_disk": "nvme1n1", "errors": 142},
+          {"name": "fast_cache", "state": "ONLINE", "capacity_pct": 22}
+        ]
+      }
+    },
+    {
+      "id": "seed-homelab-containers",
+      "keywords": ["lxc", "container", "nextcloud", "jellyfin", "docker", "proxmox ct", "cloudflare tunnel"],
+      "response": "3 LXC containers: **nextcloud-app** (CT 100) and **jellyfin-media** (CT 101) are running. **cloudflare-tunnel** (CT 102) is **stopped** — this will break external access to all self-hosted services. Recommend `pct start 102` immediately.",
+      "tool_name": "get_containers",
+      "tool_data": {
+        "running": 2,
+        "stopped": 1,
+        "stopped_critical": "cloudflare-tunnel",
+        "containers": [
+          {"vmid": 100, "hostname": "nextcloud-app", "status": "running"},
+          {"vmid": 101, "hostname": "jellyfin-media", "status": "running"},
+          {"vmid": 102, "hostname": "cloudflare-tunnel", "status": "stopped", "action_required": "pct start 102"}
+        ]
+      }
     }
-  ],
-  "lxc_containers": [
-    {"vmid": 100, "hostname": "nextcloud-app", "status": "running", "ip": "10.0.0.45"},
-    {"vmid": 101, "hostname": "jellyfin-media", "status": "running", "ip": "10.0.0.46"},
-    {"vmid": 102, "hostname": "cloudflare-tunnel", "status": "stopped", "ip": "10.0.0.47"}
   ]
 }

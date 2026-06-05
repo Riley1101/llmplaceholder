@@ -52,7 +52,7 @@ func Serve() {
 			}
 
 			logger.Printf("Executing tool '%s' for tenant '%s'", params.Name, tenantID)
-			scenario := registry.MatchTool(params.Name)
+			scenario := registry.MatchTool(params.Name, nil)
 
 			resp.Result = map[string]interface{}{
 				"content": []map[string]interface{}{
@@ -70,7 +70,7 @@ func Serve() {
 		case "tools/list":
 			logger.Println("Listing available tools...")
 			resp.Result = map[string]interface{}{
-				"tools": registry.ListTools(),
+				"tools": registry.ListTools(nil),
 			}
 
 		default:

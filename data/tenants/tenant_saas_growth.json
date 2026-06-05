@@ -1,64 +1,89 @@
 {
-  "org": "Veloce Analytics",
-  "growth_metrics": {
-    "mrr_usd": 128400.00,
-    "arr_usd": 1540800.00,
-    "mrr_growth_mom": "+6.2%",
-    "churn_rate_pct": 2.1,
-    "net_revenue_retention_pct": 118,
-    "new_customers_mtd": 47,
-    "churned_customers_mtd": 9,
-    "expansion_revenue_mtd": 14200,
-    "nps_score": 62,
-    "trial_to_paid_conversion_pct": 18.4,
-    "avg_contract_value_usd": 2731,
-    "cac_usd": 1840,
-    "ltv_usd": 19440,
-    "ltv_cac_ratio": 10.6
+  "state": {
+    "org": "Veloce Analytics",
+    "growth_metrics": {
+      "mrr_usd": 128400.00,
+      "arr_usd": 1540800.00,
+      "mrr_growth_mom": "+6.2%",
+      "churn_rate_pct": 2.1,
+      "net_revenue_retention_pct": 118,
+      "new_customers_mtd": 47,
+      "churned_customers_mtd": 9,
+      "expansion_revenue_mtd": 14200,
+      "nps_score": 62,
+      "trial_to_paid_conversion_pct": 18.4,
+      "avg_contract_value_usd": 2731,
+      "cac_usd": 1840,
+      "ltv_usd": 19440,
+      "ltv_cac_ratio": 10.6
+    },
+    "cohort_retention": [
+      {"cohort": "2026-01", "size": 38, "month_1": "88%", "month_3": "74%", "month_6": "61%"},
+      {"cohort": "2026-02", "size": 41, "month_1": "91%", "month_3": "78%"},
+      {"cohort": "2026-03", "size": 44, "month_1": "85%"},
+      {"cohort": "2026-04", "size": 52, "month_1": "90%"},
+      {"cohort": "2026-05", "size": 47, "month_1": "87%"}
+    ],
+    "top_churned_accounts": [
+      {"account": "Meridian Solutions", "arr_lost": 24000, "reason": "switched to competitor (Tableau)", "health_score_at_churn": 42, "csm": "r.okafor@veloce.io", "churned_at": "2026-06-01"},
+      {"account": "Dunlop & Associates", "arr_lost": 18000, "reason": "budget cut — Series B fell through", "health_score_at_churn": 58, "csm": "t.walsh@veloce.io", "churned_at": "2026-05-28"},
+      {"account": "Pinnacle Freight", "arr_lost": 9600, "reason": "low feature adoption, no exec sponsor", "health_score_at_churn": 31, "csm": "r.okafor@veloce.io", "churned_at": "2026-05-22"}
+    ],
+    "feature_adoption": [
+      {"feature": "AI Summaries",      "adoption_pct": 71, "wau": 1204, "trend": "up"},
+      {"feature": "Custom Dashboards", "adoption_pct": 54, "wau": 912,  "trend": "stable"},
+      {"feature": "API Webhooks",      "adoption_pct": 38, "wau": 643,  "trend": "up"},
+      {"feature": "Scheduled Reports", "adoption_pct": 29, "wau": 492,  "trend": "down"},
+      {"feature": "Data Export (CSV)", "adoption_pct": 82, "wau": 1390, "trend": "stable"},
+      {"feature": "SSO / SAML",        "adoption_pct": 61, "wau": 0,    "trend": "stable"}
+    ],
+    "at_risk_accounts": [
+      {"account": "Harlow Media Group",  "arr": 36000, "health_score": 38, "last_login_days_ago": 22, "csm": "t.walsh@veloce.io"},
+      {"account": "Crestwood Logistics", "arr": 14400, "health_score": 44, "last_login_days_ago": 14, "open_tickets": 3}
+    ]
   },
-  "cohort_retention": [
-    {"cohort": "2026-01", "size": 38, "month_1": "88%", "month_3": "74%", "month_6": "61%"},
-    {"cohort": "2026-02", "size": 41, "month_1": "91%", "month_3": "78%"},
-    {"cohort": "2026-03", "size": 44, "month_1": "85%"},
-    {"cohort": "2026-04", "size": 52, "month_1": "90%"},
-    {"cohort": "2026-05", "size": 47, "month_1": "87%"}
-  ],
-  "top_churned_accounts": [
+  "scenarios": [
     {
-      "account": "Meridian Solutions",
-      "arr_lost": 24000,
-      "reason": "switched to competitor (Tableau)",
-      "health_score_at_churn": 42,
-      "csm": "r.okafor@veloce.io",
-      "churned_at": "2026-06-01"
+      "id": "seed-saas-growth",
+      "keywords": ["churn", "mrr", "arr", "retention", "nps", "activation", "conversion", "cohort", "expansion", "ltv", "cac", "growth"],
+      "response": "Current MRR is **$128,400** (+6.2% MoM) with a churn rate of 2.1% and NRR of 118%. Three accounts churned this month totaling $51,600 ARR lost — the largest being Meridian Solutions ($24K) who switched to Tableau. Harlow Media Group is flagged at-risk with a health score of 38 and no login in 22 days. LTV:CAC ratio is healthy at 10.6x.",
+      "tool_name": "get_growth_metrics",
+      "tool_data": {
+        "mrr_usd": 128400,
+        "mrr_growth_mom": "+6.2%",
+        "churn_rate_pct": 2.1,
+        "nrr_pct": 118,
+        "ltv_cac_ratio": 10.6,
+        "at_risk_accounts": 2
+      }
     },
     {
-      "account": "Dunlop & Associates",
-      "arr_lost": 18000,
-      "reason": "budget cut — Series B fell through",
-      "health_score_at_churn": 58,
-      "csm": "t.walsh@veloce.io",
-      "churned_at": "2026-05-28"
+      "id": "seed-saas-churn",
+      "keywords": ["churned", "lost accounts", "at risk", "health score", "churned customer"],
+      "response": "This month **3 accounts** churned totaling **$51,600 ARR**: Meridian Solutions ($24K, competitor switch), Dunlop & Associates ($18K, budget cut), Pinnacle Freight ($9.6K, low adoption). Currently **2 accounts are at risk**: Harlow Media Group (health 38, 22 days no login) and Crestwood Logistics (health 44, 3 open tickets). Recommend immediate CSM outreach.",
+      "tool_name": "get_churn_report",
+      "tool_data": {
+        "churned_mtd": 3,
+        "arr_lost_usd": 51600,
+        "at_risk_count": 2,
+        "churned": [
+          {"account": "Meridian Solutions", "arr_lost": 24000},
+          {"account": "Dunlop & Associates", "arr_lost": 18000},
+          {"account": "Pinnacle Freight", "arr_lost": 9600}
+        ]
+      }
     },
     {
-      "account": "Pinnacle Freight",
-      "arr_lost": 9600,
-      "reason": "low feature adoption, no exec sponsor",
-      "health_score_at_churn": 31,
-      "csm": "r.okafor@veloce.io",
-      "churned_at": "2026-05-22"
+      "id": "seed-saas-feature-adoption",
+      "keywords": ["feature adoption", "feature usage", "product adoption", "dau", "wau", "engagement"],
+      "response": "Top feature by adoption: **Data Export (CSV)** at 82% (1,390 WAU). **AI Summaries** follows at 71% and trending up. **Scheduled Reports** is declining at 29% — consider deprecation review. SSO/SAML is enabled by 61% of accounts but generates no weekly activity (config-and-forget pattern).",
+      "tool_name": "get_feature_adoption",
+      "tool_data": {
+        "top_feature": "Data Export (CSV)",
+        "adoption_pct": 82,
+        "trending_up": ["AI Summaries", "API Webhooks"],
+        "trending_down": ["Scheduled Reports"]
+      }
     }
-  ],
-  "feature_adoption": [
-    {"feature": "AI Summaries",        "adoption_pct": 71, "wau": 1204, "trend": "up"},
-    {"feature": "Custom Dashboards",   "adoption_pct": 54, "wau": 912,  "trend": "stable"},
-    {"feature": "API Webhooks",        "adoption_pct": 38, "wau": 643,  "trend": "up"},
-    {"feature": "Scheduled Reports",   "adoption_pct": 29, "wau": 492,  "trend": "down"},
-    {"feature": "Data Export (CSV)",   "adoption_pct": 82, "wau": 1390, "trend": "stable"},
-    {"feature": "SSO / SAML",         "adoption_pct": 61, "wau": 0,    "trend": "stable"}
-  ],
-  "at_risk_accounts": [
-    {"account": "Harlow Media Group", "arr": 36000, "health_score": 38, "last_login_days_ago": 22, "csm": "t.walsh@veloce.io"},
-    {"account": "Crestwood Logistics", "arr": 14400, "health_score": 44, "last_login_days_ago": 14, "open_tickets": 3}
   ]
 }

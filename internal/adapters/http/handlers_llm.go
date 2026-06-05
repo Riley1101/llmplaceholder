@@ -11,9 +11,48 @@ import (
 	"llmplaceholder/internal/db"
 )
 
+// denyPrivateTenant returns true (and writes the error) if the tenant is private and the caller
+// is unauthenticated or is not the owner. Allows access when the tenant doesn't exist yet
+// (it will be auto-provisioned as global by ReadState).
+func denyPrivateTenant(w http.ResponseWriter, r *http.Request, dbManager *db.TenantDBManager, tenantID string) bool {
+	ownerID, isGlobal, err := dbManager.TenantOwner(tenantID)
+	if err != nil || isGlobal {
+		return false // unknown tenant → treat as global; global → open
+	}
+	user := UserFromContext(r)
+	if user == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": map[string]string{
+				"message": "private tenant requires authentication — add Authorization: Bearer <token>",
+				"type":    "authentication_error",
+				"code":    "unauthorized",
+			},
+		})
+		return true
+	}
+	if ownerID != user.ID {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": map[string]string{
+				"message": "not your tenant",
+				"type":    "permission_error",
+				"code":    "forbidden",
+			},
+		})
+		return true
+	}
+	return false
+}
+
 func HandleAnthropic(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.Context().Value(TenantIDKey).(string)
+		if denyPrivateTenant(w, r, dbManager, tenantID) {
+			return
+		}
 		log.Printf("[Anthropic Adapter] Processing request for Tenant: %s\n", tenantID)
 
 		var req models.AnthropicMessageRequest
@@ -28,7 +67,7 @@ func HandleAnthropic(dbManager *db.TenantDBManager) http.HandlerFunc {
 		}
 
 		tenantScenarios, _ := dbManager.GetScenariosForTenant(tenantID)
-		scenario := registry.MatchIntentForTenant(prompt, tenantScenarios)
+		scenario := registry.MatchIntent(prompt, tenantScenarios)
 
 		if !req.Stream {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -52,6 +91,9 @@ func HandleAnthropic(dbManager *db.TenantDBManager) http.HandlerFunc {
 func HandleOpenAI(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.Context().Value(TenantIDKey).(string)
+		if denyPrivateTenant(w, r, dbManager, tenantID) {
+			return
+		}
 		log.Printf("[OpenAI Adapter] Processing stream for Tenant: %s\n", tenantID)
 
 		var req models.OpenAIChatRequest
@@ -66,7 +108,7 @@ func HandleOpenAI(dbManager *db.TenantDBManager) http.HandlerFunc {
 		}
 
 		tenantScenarios, _ := dbManager.GetScenariosForTenant(tenantID)
-		scenario := registry.MatchIntentForTenant(prompt, tenantScenarios)
+		scenario := registry.MatchIntent(prompt, tenantScenarios)
 
 		if !req.Stream {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
