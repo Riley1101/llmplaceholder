@@ -2,7 +2,8 @@
 {{define "tenant-detail-inner"}}
 <div class="flex items-center gap-4 px-5 border-b border-slate-800 bg-black/10 shrink-0">
   <div class="flex items-center gap-2 shrink-0 py-3">
-    <span class="font-mono text-[13px] font-semibold text-slate-200">{{.TenantID}}</span>
+    <span class="font-mono text-[13px] font-semibold text-slate-200">{{if .Name}}{{.Name}}{{else}}{{.TenantID}}{{end}}</span>
+    {{if not .IsGlobal}}<span class="text-[10px] font-mono text-slate-600 bg-slate-800/60 border border-slate-700/60 rounded px-1.5 py-0.5" title="Use in X-Tenant-ID header">{{.TenantID}}</span>{{end}}
     {{if .IsGlobal}}<span class="text-[10px] font-semibold text-slate-600 bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5">global · read-only</span>{{end}}
   </div>
   <div class="flex gap-1 flex-1">

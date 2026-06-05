@@ -60,31 +60,42 @@ func HandleListTenants(dbManager *db.TenantDBManager) http.HandlerFunc {
 	}
 }
 
-// POST /public/tenants  body: {"tenant_id":"...", "state":{...}}
+// POST /public/tenants  body: {"name":"...", "state":{...}}
+// "tenant_id" accepted as alias for "name" for backward compatibility.
 func HandleCreateTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := UserFromContext(r).ID
 		var body struct {
-			TenantID string                 `json:"tenant_id"`
+			Name     string                 `json:"name"`
+			TenantID string                 `json:"tenant_id"` // backward compat alias
 			State    map[string]interface{} `json:"state"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.TenantID == "" {
-			jsonErr(w, "invalid body: tenant_id required", http.StatusBadRequest)
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			jsonErr(w, "invalid body", http.StatusBadRequest)
+			return
+		}
+		name := body.Name
+		if name == "" {
+			name = body.TenantID
+		}
+		if name == "" {
+			jsonErr(w, "name required", http.StatusBadRequest)
 			return
 		}
 
-		if err := dbManager.CreateTenantForUser(body.TenantID, userID); err != nil {
-			jsonErr(w, "tenant already exists", http.StatusConflict)
+		tenantID, err := dbManager.CreateTenantForUser(name, userID)
+		if err != nil {
+			jsonErr(w, "failed to create tenant", http.StatusInternalServerError)
 			return
 		}
 
 		if body.State != nil {
-			dbManager.WriteState(body.TenantID, body.State)
+			dbManager.WriteState(tenantID, body.State)
 		}
 
-		log.Printf("[Admin] Created tenant: %s\n", body.TenantID)
+		log.Printf("[Admin] Created tenant: %s (name: %s)\n", tenantID, name)
 		w.WriteHeader(http.StatusCreated)
-		jsonOK(w, map[string]string{"status": "created", "tenant_id": body.TenantID})
+		jsonOK(w, map[string]string{"status": "created", "tenant_id": tenantID, "name": name})
 	}
 }
 

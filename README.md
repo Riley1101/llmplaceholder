@@ -1,44 +1,19 @@
 # llmplaceholder
 
-Mock LLM APIs for local dev and tests. Tenant-scoped OpenAI and Anthropic-compatible endpoints, chaos injection, and MCP support. No API key. No rate limits. Just HTTP.
+Mock LLM APIs for local dev and testing. Drop-in replacement for OpenAI, Anthropic, and MCP — tenant-scoped, with chaos injection and no API keys required.
 
-## Quick start
+**[llmplaceholder.com](https://llmplaceholder.com)**
 
-```bash
-go run ./cmd/server
-# → http://localhost:8080
-```
+## Features
 
-## Endpoints
-
-### LLM
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/v1/chat/completions` | OpenAI-compatible chat completions |
-| POST | `/v1/messages` | Anthropic Messages API |
-
-All LLM endpoints require `X-Tenant-ID` header. Pass `"stream": true` for SSE streaming or `"stream": false` for a single JSON response.
-
-### MCP
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/mcp/message` | JSON-RPC 2.0 over HTTP (spec 2025-03-26) |
-| GET | `/mcp/sse` | Legacy HTTP+SSE transport (spec 2024-11-05) |
-
-Supported methods: `initialize`, `tools/list`, `tools/call`, `resources/list`, `prompts/list`.
-
-### Admin
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET/POST | `/admin/tenants` | List / create tenants |
-| GET/PUT/DELETE | `/admin/tenants/{id}` | Get state / update state / delete |
-| GET/POST | `/admin/tenants/{id}/scenarios` | List / create scenarios |
-| DELETE | `/admin/tenants/{id}/scenarios/{sid}` | Delete a scenario |
-| GET/PATCH | `/admin/tenants/{id}/settings` | Get / patch settings |
-| GET/POST | `/admin/tenants/{id}/chaos` | Get / set chaos profile |
+- **OpenAI-compatible** — `/v1/chat/completions` with streaming
+- **Anthropic-compatible** — `/v1/messages` with streaming
+- **MCP support** — JSON-RPC 2.0 and HTTP+SSE transports
+- **Multi-tenant** — isolated state, scenarios, and chaos per tenant
+- **Scenario matching** — keyword-based response routing, falls back to global registry
+- **Chaos injection** — `rate_limit`, `server_error`, `latency` profiles
+- **Auth** — GitHub OAuth + API token support
+- **Playground** — visual UI to manage tenants, fire requests, configure chaos
 
 ## Usage
 
@@ -48,7 +23,7 @@ Supported methods: `initialize`, `tools/list`, `tools/call`, `resources/list`, `
 import openai
 
 client = openai.OpenAI(
-    base_url="http://localhost:8080",
+    base_url="https://llmplaceholder.com",
     api_key="placeholder",
     default_headers={"X-Tenant-ID": "tenant_ecommerce"},
 )
@@ -67,7 +42,7 @@ for chunk in client.chat.completions.create(
 import anthropic
 
 client = anthropic.Anthropic(
-    base_url="http://localhost:8080",
+    base_url="https://llmplaceholder.com",
     api_key="placeholder",
     default_headers={"X-Tenant-ID": "tenant_ecommerce"},
 )
@@ -81,19 +56,17 @@ with client.messages.stream(
         print(text, end="", flush=True)
 ```
 
-### curl (OpenAI)
+### curl
 
 ```bash
-curl -X POST http://localhost:8080/v1/chat/completions \
+# OpenAI
+curl -X POST https://llmplaceholder.com/v1/chat/completions \
   -H "X-Tenant-ID: tenant_ecommerce" \
   -H "Content-Type: application/json" \
   -d '{"model":"gpt-4o","messages":[{"role":"user","content":"Show me recent invoices"}],"stream":true}'
-```
 
-### curl (Anthropic)
-
-```bash
-curl -X POST http://localhost:8080/v1/messages \
+# Anthropic
+curl -X POST https://llmplaceholder.com/v1/messages \
   -H "X-Tenant-ID: tenant_ecommerce" \
   -H "Content-Type: application/json" \
   -d '{"model":"claude-opus-4-5","max_tokens":1024,"messages":[{"role":"user","content":"Show me recent invoices"}],"stream":true}'
@@ -101,20 +74,18 @@ curl -X POST http://localhost:8080/v1/messages \
 
 ## Tenants and scenarios
 
-Each tenant has isolated state, scenarios, and chaos profile. Requests are matched to scenarios by keyword substring. If no tenant scenario matches, falls back to the global registry.
-
-Create a tenant:
+Each tenant has isolated state, scenarios, and chaos profile. Requests match scenarios by keyword substring. No match falls back to the global tenant.
 
 ```bash
-curl -X POST http://localhost:8080/admin/tenants \
+# Create tenant
+curl -X POST https://llmplaceholder.com/public/tenants \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"tenant_id":"my-tenant","state":{}}'
-```
+  -d '{"tenant_id":"my-tenant"}'
 
-Add a scenario:
-
-```bash
-curl -X POST http://localhost:8080/admin/tenants/my-tenant/scenarios \
+# Add scenario
+curl -X POST https://llmplaceholder.com/public/tenants/my-tenant/scenarios \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"keywords":["invoice","billing"],"response":"Here are your recent invoices..."}'
 ```
@@ -124,11 +95,8 @@ curl -X POST http://localhost:8080/admin/tenants/my-tenant/scenarios \
 Profiles: `none`, `rate_limit`, `server_error`, `latency`.
 
 ```bash
-curl -X POST http://localhost:8080/admin/tenants/my-tenant/chaos \
+curl -X POST https://llmplaceholder.com/public/tenants/my-tenant/chaos \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"profile":"latency"}'
 ```
-
-## Playground
-
-Open [http://localhost:8080/playground](http://localhost:8080/playground) to manage tenants, fire live requests against all three protocols, and configure chaos profiles visually.

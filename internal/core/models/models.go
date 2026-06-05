@@ -80,6 +80,7 @@ type JSONRPCResponse struct {
 // TenantMeta carries tenant identity plus ownership flag for UI rendering.
 type TenantMeta struct {
 	ID       string `json:"id"`
+	Name     string `json:"name"`
 	IsGlobal bool   `json:"is_global"`
 }
 
