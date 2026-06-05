@@ -19,6 +19,7 @@ const stateCookieName = "oauth_state"
 
 func githubClientID() string     { return os.Getenv("GITHUB_CLIENT_ID") }
 func githubClientSecret() string { return os.Getenv("GITHUB_CLIENT_SECRET") }
+func githubRedirectURL() string  { return os.Getenv("GITHUB_REDIRECT_URL") }
 func isProduction() bool         { return os.Getenv("ENV") == "production" }
 
 func randomHex(n int) string {
@@ -77,6 +78,9 @@ func HandleGithubLogin() http.HandlerFunc {
 			url.QueryEscape(githubClientID()),
 			url.QueryEscape(state),
 		)
+		if redirectURL := githubRedirectURL(); redirectURL != "" {
+			authURL += "&redirect_uri=" + url.QueryEscape(redirectURL)
+		}
 		http.Redirect(w, r, authURL, http.StatusFound)
 	}
 }
@@ -160,6 +164,9 @@ func exchangeGithubCode(code string) (string, error) {
 	form.Set("client_id", githubClientID())
 	form.Set("client_secret", githubClientSecret())
 	form.Set("code", code)
+	if r := githubRedirectURL(); r != "" {
+		form.Set("redirect_uri", r)
+	}
 
 	req, _ := http.NewRequest(http.MethodPost, "https://github.com/login/oauth/access_token", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")

@@ -18,6 +18,7 @@ var chaosProfiles = []string{"none", "rate_limit", "server_error", "latency"}
 
 type uiDetailData struct {
 	TenantID  string
+	Name      string
 	PathID    string
 	StateJSON string
 	IsGlobal  bool
@@ -25,6 +26,7 @@ type uiDetailData struct {
 
 type uiScenarioTabData struct {
 	TenantID  string
+	Name      string
 	PathID    string
 	Scenarios []models.TenantScenario
 	IsGlobal  bool
@@ -32,6 +34,7 @@ type uiScenarioTabData struct {
 
 type uiToolsTabData struct {
 	TenantID    string
+	Name        string
 	PathID      string
 	TenantTools []models.TenantScenario
 	IsGlobal    bool
@@ -39,6 +42,7 @@ type uiToolsTabData struct {
 
 type uiChaosTabData struct {
 	TenantID string
+	Name     string
 	PathID   string
 	Profile  string
 	Profiles []string
@@ -117,6 +121,7 @@ func buildDetailData(tenantID string, dbManager *db.TenantDBManager) uiDetailDat
 	_, isGlobal, _ := dbManager.TenantOwner(tenantID)
 	return uiDetailData{
 		TenantID:  tenantID,
+		Name:      dbManager.TenantName(tenantID),
 		PathID:    url.PathEscape(tenantID),
 		StateJSON: string(b),
 		IsGlobal:  isGlobal,
@@ -134,6 +139,7 @@ func buildToolsData(tenantID string, dbManager *db.TenantDBManager, isGlobal boo
 	}
 	return uiToolsTabData{
 		TenantID:    tenantID,
+		Name:        dbManager.TenantName(tenantID),
 		PathID:      pathID,
 		TenantTools: tenantTools,
 		IsGlobal:    isGlobal,
@@ -144,6 +150,7 @@ func buildScenarioData(tenantID string, dbManager *db.TenantDBManager, isGlobal 
 	scenarios, _ := dbManager.GetScenariosForTenant(tenantID)
 	return uiScenarioTabData{
 		TenantID:  tenantID,
+		Name:      dbManager.TenantName(tenantID),
 		PathID:    url.PathEscape(tenantID),
 		Scenarios: scenarios,
 		IsGlobal:  isGlobal,
@@ -173,17 +180,21 @@ func HandleUIGetTenants(dbManager *db.TenantDBManager) http.HandlerFunc {
 	}
 }
 
-// POST /ui/tenants  form: tenant_id
+// POST /ui/tenants  form: name
 func HandleUICreateTenant(dbManager *db.TenantDBManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := UserFromContext(r).ID
-		tenantID := strings.TrimSpace(r.FormValue("tenant_id"))
-		if tenantID == "" {
+		name := strings.TrimSpace(r.FormValue("name"))
+		if name == "" {
+			name = strings.TrimSpace(r.FormValue("tenant_id")) // backward compat
+		}
+		if name == "" {
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprint(w, `<span class="text-red-400 text-[11px]">✗ tenant_id required</span>`)
+			fmt.Fprint(w, `<span class="text-red-400 text-[11px]">✗ name required</span>`)
 			return
 		}
-		if err := dbManager.CreateTenantForUser(tenantID, userID); err != nil {
+		tenantID, err := dbManager.CreateTenantForUser(name, userID)
+		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, `<span class="text-red-400 text-[11px]">✗ %s</span>`, err.Error())
 			return

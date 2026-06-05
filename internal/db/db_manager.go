@@ -21,7 +21,8 @@ import (
 )
 
 type TenantDBManager struct {
-	db *sql.DB
+	db     *sql.DB
+	syncDB *turso.TursoSyncDb
 }
 
 func NewTenantDBManager(dbPath string) (*TenantDBManager, error) {
@@ -29,13 +30,13 @@ func NewTenantDBManager(dbPath string) (*TenantDBManager, error) {
 
 	var db *sql.DB
 	var err error
+	var syncDB *turso.TursoSyncDb
 
 	tursoURL := os.Getenv("TURSO_DATABASE_URL")
 	tursoToken := os.Getenv("TURSO_AUTH_TOKEN")
 
 	if tursoURL != "" && tursoToken != "" {
 		bootstrap := true
-		var syncDB *turso.TursoSyncDb
 		syncDB, err = turso.NewTursoSyncDb(context.Background(), turso.TursoSyncDbConfig{
 			Path:             dbPath,
 			RemoteUrl:        tursoURL,
@@ -88,6 +89,8 @@ func NewTenantDBManager(dbPath string) (*TenantDBManager, error) {
 	// idempotent migrations — ignored if column already exists
 	db.Exec(`ALTER TABLE tenant_state ADD COLUMN settings_json TEXT NOT NULL DEFAULT '{}'`)
 	db.Exec(`ALTER TABLE tenant_state ADD COLUMN owner_id TEXT REFERENCES users(id)`)
+	db.Exec(`ALTER TABLE tenant_state ADD COLUMN name TEXT NOT NULL DEFAULT ''`)
+	db.Exec(`UPDATE tenant_state SET name = tenant_id WHERE name = ''`)
 
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
 		id          TEXT PRIMARY KEY,
@@ -127,7 +130,27 @@ func NewTenantDBManager(dbPath string) (*TenantDBManager, error) {
 		return nil, err
 	}
 
-	return &TenantDBManager{db: db}, nil
+	m := &TenantDBManager{db: db, syncDB: syncDB}
+
+	if syncDB != nil {
+		go func() {
+			for range time.Tick(30 * time.Second) {
+				if err := syncDB.Push(context.Background()); err != nil {
+					log.Println("[DB] Turso push failed:", err)
+				}
+			}
+		}()
+	}
+
+	return m, nil
+}
+
+func (m *TenantDBManager) Sync() {
+	if m.syncDB != nil {
+		if err := m.syncDB.Push(context.Background()); err != nil {
+			log.Println("[DB] Turso sync failed:", err)
+		}
+	}
 }
 
 // ── Tenant state ──────────────────────────────────────────────────────────────
@@ -273,7 +296,7 @@ func (m *TenantDBManager) DeleteScenario(id string) error {
 // ListTenantsForUser returns tenants owned by userID plus all global tenants (owner_id IS NULL).
 func (m *TenantDBManager) ListTenantsForUser(userID string) ([]models.TenantMeta, error) {
 	rows, err := m.db.Query(
-		`SELECT tenant_id, (owner_id IS NULL) as is_global
+		`SELECT tenant_id, name, (owner_id IS NULL) as is_global
 		 FROM tenant_state
 		 WHERE owner_id = ? OR owner_id IS NULL
 		 ORDER BY (owner_id IS NULL), created_at`,
@@ -288,7 +311,7 @@ func (m *TenantDBManager) ListTenantsForUser(userID string) ([]models.TenantMeta
 	for rows.Next() {
 		var t models.TenantMeta
 		var isGlobal int
-		if err := rows.Scan(&t.ID, &isGlobal); err != nil {
+		if err := rows.Scan(&t.ID, &t.Name, &isGlobal); err != nil {
 			return nil, err
 		}
 		t.IsGlobal = isGlobal == 1
@@ -297,13 +320,30 @@ func (m *TenantDBManager) ListTenantsForUser(userID string) ([]models.TenantMeta
 	return tenants, rows.Err()
 }
 
-// CreateTenantForUser inserts a new tenant owned by userID.
-// Returns an error if tenant_id already exists.
-func (m *TenantDBManager) CreateTenantForUser(tenantID, userID string) error {
+// CreateTenantForUser creates a tenant with a display name and a unique generated ID.
+// Returns the generated tenant_id.
+func (m *TenantDBManager) CreateTenantForUser(name, userID string) (string, error) {
+	tenantID := name + "-" + generateHex(4)
 	_, err := m.db.Exec(
-		`INSERT INTO tenant_state (tenant_id, state_json, owner_id) VALUES (?, '{}', ?)`,
-		tenantID, userID)
-	return err
+		`INSERT INTO tenant_state (tenant_id, name, state_json, owner_id) VALUES (?, ?, '{}', ?)`,
+		tenantID, name, userID)
+	return tenantID, err
+}
+
+func generateHex(n int) string {
+	b := make([]byte, n)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+// TenantName returns the display name for a tenant, falling back to tenant_id if unset.
+func (m *TenantDBManager) TenantName(tenantID string) string {
+	var name string
+	m.db.QueryRow("SELECT name FROM tenant_state WHERE tenant_id = ?", tenantID).Scan(&name)
+	if name == "" {
+		return tenantID
+	}
+	return name
 }
 
 // TenantOwner returns the ownerID for a tenant plus whether it is global (owner_id IS NULL).

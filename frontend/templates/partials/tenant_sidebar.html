@@ -11,7 +11,7 @@
     {{else}}
     <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span>
     {{end}}
-    <span class="truncate flex-1">{{.ID}}</span>
+    <span class="truncate flex-1">{{if .Name}}{{.Name}}{{else}}{{.ID}}{{end}}</span>
     {{if .IsGlobal}}<span class="text-[9px] font-mono text-slate-700 shrink-0">global</span>{{end}}
   </div>
   {{end}}
