@@ -91,6 +91,7 @@ func NewTenantDBManager(dbPath string) (*TenantDBManager, error) {
 	db.Exec(`ALTER TABLE tenant_state ADD COLUMN owner_id TEXT REFERENCES users(id)`)
 	db.Exec(`ALTER TABLE tenant_state ADD COLUMN name TEXT NOT NULL DEFAULT ''`)
 	db.Exec(`UPDATE tenant_state SET name = tenant_id WHERE name = ''`)
+	db.Exec(`ALTER TABLE tenant_scenarios ADD COLUMN status TEXT NOT NULL DEFAULT 'active'`)
 
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
 		id          TEXT PRIMARY KEY,
@@ -245,9 +246,21 @@ func (m *TenantDBManager) WriteSettings(tenantID string, settings map[string]int
 // ── Tenant scenarios ──────────────────────────────────────────────────────────
 
 func (m *TenantDBManager) GetScenariosForTenant(tenantID string) ([]models.TenantScenario, error) {
+	return m.queryScenariosWhere("tenant_id = ?", tenantID)
+}
+
+func (m *TenantDBManager) GetActiveScenariosForTenant(tenantID string) ([]models.TenantScenario, error) {
+	return m.queryScenariosWhere("tenant_id = ? AND status = 'active'", tenantID)
+}
+
+func (m *TenantDBManager) GetDraftScenariosForTenant(tenantID string) ([]models.TenantScenario, error) {
+	return m.queryScenariosWhere("tenant_id = ? AND status = 'draft'", tenantID)
+}
+
+func (m *TenantDBManager) queryScenariosWhere(where string, args ...interface{}) ([]models.TenantScenario, error) {
 	rows, err := m.db.Query(
-		"SELECT id, tenant_id, keywords, response, tool_name, tool_data FROM tenant_scenarios WHERE tenant_id = ? ORDER BY created_at",
-		tenantID,
+		"SELECT id, tenant_id, keywords, response, tool_name, tool_data, status FROM tenant_scenarios WHERE "+where+" ORDER BY created_at",
+		args...,
 	)
 	if err != nil {
 		return nil, err
@@ -258,7 +271,7 @@ func (m *TenantDBManager) GetScenariosForTenant(tenantID string) ([]models.Tenan
 	for rows.Next() {
 		var s models.TenantScenario
 		var keywordsStr, toolDataStr string
-		if err := rows.Scan(&s.ID, &s.TenantID, &keywordsStr, &s.Response, &s.ToolName, &toolDataStr); err != nil {
+		if err := rows.Scan(&s.ID, &s.TenantID, &keywordsStr, &s.Response, &s.ToolName, &toolDataStr, &s.Status); err != nil {
 			return nil, err
 		}
 		json.Unmarshal([]byte(keywordsStr), &s.Keywords)
@@ -272,6 +285,9 @@ func (m *TenantDBManager) GetScenariosForTenant(tenantID string) ([]models.Tenan
 
 func (m *TenantDBManager) CreateScenario(s models.TenantScenario) (models.TenantScenario, error) {
 	s.ID = fmt.Sprintf("scn-%d", time.Now().UnixNano())
+	if s.Status == "" {
+		s.Status = "active"
+	}
 
 	keywordsJSON, _ := json.Marshal(s.Keywords)
 	toolDataJSON := []byte("{}")
@@ -280,15 +296,62 @@ func (m *TenantDBManager) CreateScenario(s models.TenantScenario) (models.Tenant
 	}
 
 	_, err := m.db.Exec(
-		"INSERT INTO tenant_scenarios (id, tenant_id, keywords, response, tool_name, tool_data) VALUES (?, ?, ?, ?, ?, ?)",
-		s.ID, s.TenantID, string(keywordsJSON), s.Response, s.ToolName, string(toolDataJSON),
+		"INSERT INTO tenant_scenarios (id, tenant_id, keywords, response, tool_name, tool_data, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		s.ID, s.TenantID, string(keywordsJSON), s.Response, s.ToolName, string(toolDataJSON), s.Status,
 	)
 	return s, err
+}
+
+func (m *TenantDBManager) ApproveScenario(id string) error {
+	_, err := m.db.Exec("UPDATE tenant_scenarios SET status = 'active' WHERE id = ?", id)
+	return err
 }
 
 func (m *TenantDBManager) DeleteScenario(id string) error {
 	_, err := m.db.Exec("DELETE FROM tenant_scenarios WHERE id = ?", id)
 	return err
+}
+
+// ── MCP keys ──────────────────────────────────────────────────────────────────
+
+func generateMCPToken() string {
+	b := make([]byte, 24)
+	rand.Read(b)
+	return "mcpkey_" + hex.EncodeToString(b)
+}
+
+// GenerateMCPKey creates a new MCP key for a tenant, stores its hash in settings, and returns the plain key.
+func (m *TenantDBManager) GenerateMCPKey(tenantID string) (string, error) {
+	plain := generateMCPToken()
+	settings, err := m.ReadSettings(tenantID)
+	if err != nil {
+		settings = map[string]interface{}{}
+	}
+	settings["mcp_key_hash"] = tokenHash(plain)
+	if err := m.WriteSettings(tenantID, settings); err != nil {
+		return "", err
+	}
+	return plain, nil
+}
+
+// ValidateMCPKey checks that the given plain key matches the stored hash for the tenant.
+func (m *TenantDBManager) ValidateMCPKey(tenantID, plain string) bool {
+	settings, err := m.ReadSettings(tenantID)
+	if err != nil {
+		return false
+	}
+	stored, ok := settings["mcp_key_hash"].(string)
+	if !ok || stored == "" {
+		return false
+	}
+	return stored == tokenHash(plain)
+}
+
+// HasMCPKey reports whether a tenant has a configured MCP key.
+func (m *TenantDBManager) HasMCPKey(tenantID string) bool {
+	settings, _ := m.ReadSettings(tenantID)
+	h, _ := settings["mcp_key_hash"].(string)
+	return h != ""
 }
 
 // ── Tenant ownership ──────────────────────────────────────────────────────────
@@ -545,7 +608,7 @@ func (m *TenantDBManager) MigrateFromFiles(dataDir string) {
 				toolDataJSON = s.ToolData
 			}
 			_, err := m.db.Exec(
-				`INSERT OR IGNORE INTO tenant_scenarios (id, tenant_id, keywords, response, tool_name, tool_data) VALUES (?, ?, ?, ?, ?, ?)`,
+				`INSERT OR IGNORE INTO tenant_scenarios (id, tenant_id, keywords, response, tool_name, tool_data, status) VALUES (?, ?, ?, ?, ?, ?, 'active')`,
 				s.ID, tenantID, string(kwJSON), s.Response, s.ToolName, string(toolDataJSON),
 			)
 			if err != nil {

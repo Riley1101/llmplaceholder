@@ -38,6 +38,7 @@ type TenantScenario struct {
 	Response string      `json:"response"`
 	ToolName string      `json:"tool_name,omitempty"`
 	ToolData interface{} `json:"tool_data,omitempty"`
+	Status   string      `json:"status"` // "active" | "draft"
 }
 
 // OpenAIChatRequest represents standard /v1/chat/completions payload

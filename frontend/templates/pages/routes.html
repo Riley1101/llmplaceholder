@@ -27,9 +27,11 @@
           class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">Anthropic</button>
         <button type="button" id="tab-mcp"    onclick="showTab('mcp',this)"
           class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">MCP</button>
+        <button type="button" id="tab-editor" onclick="showTab('editor',this)"
+          class="qs-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">MCP Editor</button>
       </div>
       <div class="bg-base">
-        <pre id="qs-curl" class="p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">curl -X POST http://localhost:8080/v1/chat/completions \
+        <pre id="qs-curl" class="p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">curl -X POST https://llmplaceholder.com/v1/chat/completions \
   -H "X-Tenant-ID: tenant_ecommerce" \
   -H "Content-Type: application/json" \
   -d '{
@@ -37,7 +39,7 @@
     "messages": [{"role":"user","content":"Show me recent invoices"}],
     "stream": true
   }'</pre>
-        <pre id="qs-js" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">const res = await fetch("http://localhost:8080/v1/chat/completions", {
+        <pre id="qs-js" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">const res = await fetch("https://llmplaceholder.com/v1/chat/completions", {
   method: "POST",
   headers: {
     "X-Tenant-ID": "tenant_ecommerce",
@@ -55,7 +57,7 @@ const reader = res.body.getReader();
         <pre id="qs-python" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">import openai
 
 client = openai.OpenAI(
-    base_url="http://localhost:8080",
+    base_url="https://llmplaceholder.com",
     api_key="placeholder",
     default_headers={"X-Tenant-ID": "tenant_ecommerce"},
 )
@@ -69,7 +71,7 @@ for chunk in client.chat.completions.create(
         <pre id="qs-anthropic" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">import anthropic
 
 client = anthropic.Anthropic(
-    base_url="http://localhost:8080",
+    base_url="https://llmplaceholder.com",
     api_key="placeholder",
     default_headers={"X-Tenant-ID": "tenant_ecommerce"},
 )
@@ -82,21 +84,34 @@ with client.messages.stream(
     for text in stream.text_stream:
         print(text, end="", flush=True)</pre>
         <pre id="qs-mcp" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre"># List tools
-curl -X POST http://localhost:8080/mcp/message \
+curl -X POST https://llmplaceholder.com/mcp/message \
   -H "X-Tenant-ID: tenant_ecommerce" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 
 # Call a tool
-curl -X POST http://localhost:8080/mcp/message \
+curl -X POST https://llmplaceholder.com/mcp/message \
   -H "X-Tenant-ID: tenant_ecommerce" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_invoice_ledger"}}'
 
 # SSE transport (legacy 2024-11-05 spec)
-curl -N http://localhost:8080/mcp/sse \
+curl -N https://llmplaceholder.com/mcp/sse \
   -H "X-Tenant-ID: tenant_ecommerce" \
   -H "Accept: text/event-stream"</pre>
+        <pre id="qs-editor" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre"># .claude/settings.json (Claude Code)
+{
+  "mcpServers": {
+    "llmplaceholder": {
+      "type": "http",
+      "url": "https://llmplaceholder.com/mcp/message",
+      "headers": {
+        "X-Tenant-ID": "my-tenant",
+        "Authorization": "Bearer &lt;api-token from Playground → API Tokens&gt;"
+      }
+    }
+  }
+}</pre>
       </div>
     </div>
   </div>
@@ -144,11 +159,11 @@ curl -N http://localhost:8080/mcp/sse \
     <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
       <div class="flex items-start gap-4 px-5 py-3.5">
         <code class="font-mono text-[13px] text-accent shrink-0 w-36">tools/list</code>
-        <span class="text-[13px] text-slate-500">Returns all tools defined in the tenant's scenarios.</span>
+        <span class="text-[13px] text-slate-500">Returns all tools defined in the tenant's scenarios. Tenant owners also see management tools (<code class="ic">create_scenario</code>, <code class="ic">list_scenarios</code>, <code class="ic">get_tenant</code>).</span>
       </div>
       <div class="flex items-start gap-4 px-5 py-3.5">
         <code class="font-mono text-[13px] text-accent shrink-0 w-36">tools/call</code>
-        <span class="text-[13px] text-slate-500">Calls a named tool. Returns mock JSON from the matching tenant scenario.</span>
+        <span class="text-[13px] text-slate-500">Calls a named tool. Returns mock JSON from the matching tenant scenario. Management tools require tenant ownership.</span>
       </div>
       <div class="flex items-start gap-4 px-5 py-3.5">
         <code class="font-mono text-[13px] text-accent shrink-0 w-36">resources/list</code>
@@ -163,6 +178,26 @@ curl -N http://localhost:8080/mcp/sse \
         <span class="text-[13px] text-slate-500">Returns server info and capability advertisement for the 2025-03-26 protocol version.</span>
       </div>
     </div>
+
+    <div class="mt-8">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Management tools <span class="normal-case font-normal text-slate-600 ml-1">(tenant owner only)</span></p>
+      <p class="text-[13px] text-slate-500 mb-3">Exposed via <code class="ic">tools/call</code> when authenticated as the tenant owner. Also available in the MCP stdio server for editor integration.</p>
+      <div class="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
+        <div class="flex items-start gap-4 px-5 py-3.5">
+          <code class="font-mono text-[13px] text-pink shrink-0 w-40">create_scenario</code>
+          <span class="text-[13px] text-slate-500">Create a draft scenario. Params: <code class="ic">keywords</code> (comma-separated or array), <code class="ic">response</code>. Draft appears in Playground for review before going active.</span>
+        </div>
+        <div class="flex items-start gap-4 px-5 py-3.5">
+          <code class="font-mono text-[13px] text-pink shrink-0 w-40">list_scenarios</code>
+          <span class="text-[13px] text-slate-500">List scenarios for this tenant. Optional param: <code class="ic">status</code> — <code class="ic">active</code>, <code class="ic">draft</code>, or omit for all.</span>
+        </div>
+        <div class="flex items-start gap-4 px-5 py-3.5">
+          <code class="font-mono text-[13px] text-pink shrink-0 w-40">get_tenant</code>
+          <span class="text-[13px] text-slate-500">Get tenant name and scenario counts (active + draft).</span>
+        </div>
+      </div>
+      <p class="text-[12px] text-slate-600 mt-3">For editor integration (Claude Code, Cursor, etc.) see <a href="/docs#mcp-editor" class="text-accent hover:underline">MCP Editor Integration</a>.</p>
+    </div>
     <div class="mt-10">
       <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Quick start</p>
 
@@ -174,14 +209,14 @@ curl -N http://localhost:8080/mcp/sse \
             class="mcp-tab px-4 py-2 text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-300 rounded-t-md">2. call tool</button>
         </div>
         <div class="bg-base">
-          <pre id="mcp-qs-list" class="p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">curl -s -X POST http://localhost:8080/mcp/message \
+          <pre id="mcp-qs-list" class="p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">curl -s -X POST https://llmplaceholder.com/mcp/message \
   -H "X-Tenant-ID: tenant_saas_growth" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 
 # Returns all tools defined in this tenant's scenarios:
 # get_growth_metrics, get_churn_report, get_feature_adoption</pre>
-          <pre id="mcp-qs-call" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">curl -s -X POST http://localhost:8080/mcp/message \
+          <pre id="mcp-qs-call" class="hidden p-5 font-mono text-[12.5px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">curl -s -X POST https://llmplaceholder.com/mcp/message \
   -H "X-Tenant-ID: tenant_saas_growth" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call",
@@ -337,7 +372,7 @@ curl -N http://localhost:8080/mcp/sse \
     grid.innerHTML = `<div class="col-span-full text-sm text-slate-500 py-6 px-5 border border-dashed border-slate-700 rounded-xl text-center">Loading tenants…</div>`;
     try {
       const data    = await fetch("/public/tenants").then(r => r.json());
-      const tenants = data.tenants || [];
+      const tenants = (data.tenants || []).filter(t => t.is_global);
       if (!tenants.length) {
         grid.innerHTML = `<div class="col-span-full text-sm text-slate-500 py-6 px-5 border border-dashed border-slate-700 rounded-xl text-center">No tenants. Create one via <code class="ic">POST /public/tenants</code>.</div>`;
         return;

@@ -10,14 +10,20 @@ import (
 	"llmplaceholder/internal/adapters/stdio"
 	"llmplaceholder/internal/chaos"
 	"llmplaceholder/internal/db"
+	"llmplaceholder/internal/mcp"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "stdio" {
-		// You would need a stdio adapter (like the one we discussed earlier)
-		stdio.Serve()
-		return
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "stdio":
+			stdio.Serve()
+			return
+		case "mcp":
+			mcp.Serve()
+			return
+		}
 	}
 
 	_ = godotenv.Load()
@@ -57,6 +63,8 @@ func main() {
 		adapter.TenantMiddleware(chaosManager.Middleware(adapter.HandleAnthropic(dbManager))))
 	mux.HandleFunc("POST /mcp/message",
 		adapter.StrictTenantMiddleware(adapter.HandleMCPMessage(dbManager)))
+	mux.HandleFunc("POST /mcp/sse",
+		adapter.StrictTenantMiddleware(adapter.HandleMCPMessage(dbManager)))
 	mux.HandleFunc("GET /mcp/sse",
 		adapter.StrictTenantMiddleware(adapter.HandleMCPSSE(dbManager)))
 
@@ -72,8 +80,9 @@ func main() {
 	mux.HandleFunc("POST /ui/tenants",                             ra(adapter.HandleUICreateTenant(dbManager)))
 	mux.HandleFunc("DELETE /ui/tenants/{id}",                      ra(adapter.HandleUIDeleteTenant(dbManager)))
 	mux.HandleFunc("PUT /ui/tenants/{id}/state",                   ra(adapter.HandleUISaveState(dbManager)))
-	mux.HandleFunc("POST /ui/tenants/{id}/scenarios",              ra(adapter.HandleUICreateScenario(dbManager)))
-	mux.HandleFunc("DELETE /ui/tenants/{id}/scenarios/{sid}",      ra(adapter.HandleUIDeleteScenario(dbManager)))
+	mux.HandleFunc("POST /ui/tenants/{id}/scenarios",                    ra(adapter.HandleUICreateScenario(dbManager)))
+	mux.HandleFunc("DELETE /ui/tenants/{id}/scenarios/{sid}",            ra(adapter.HandleUIDeleteScenario(dbManager)))
+	mux.HandleFunc("POST /ui/tenants/{id}/scenarios/{sid}/approve",      ra(adapter.HandleUIApproveScenario(dbManager)))
 	mux.HandleFunc("POST /ui/tenants/{id}/tools",                  ra(adapter.HandleUICreateTool(dbManager)))
 	mux.HandleFunc("DELETE /ui/tenants/{id}/tools/{sid}",          ra(adapter.HandleUIDeleteTool(dbManager)))
 	mux.HandleFunc("POST /ui/tenants/{id}/chaos",                  ra(adapter.HandleUISetChaos(chaosManager, dbManager)))
